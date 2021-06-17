@@ -1,0 +1,33 @@
+{
+  "name": "gridzone-contracts",
+  "version": "1.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "node": "npx hardhat node --no-deploy",
+    "test": "npx hardhat test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-etherscan": "^2.1.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/test-helpers": "^0.5.11",
+    "bignumber.js": "^9.0.1",
+    "chai": "^4.3.0",
+    "dotenv": "^10.0.0",
+    "ethereum-waffle": "^3.3.0",
+    "ethers": "^5.0.31",
+    "hardhat": "^2.0.11",
+    "hardhat-deploy": "^0.7.0-beta.50",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
+    "hardhat-gas-reporter": "^1.0.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.4.1",
+    "@uniswap/lib": "^4.0.1-alpha"
+  }
+}
