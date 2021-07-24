@@ -44,7 +44,7 @@ Compile the smart contracts.
 npx hardhat compile
 ```
 
-## Deploy and Verify contracts
+## Deploy and Verify contracts on Ethereum Mainnet
 
 You can deploy contracts and verify with etherscan API key.
 
@@ -68,6 +68,33 @@ npx hardhat deploy --network mainnet --tags mainnet_NYM_verify
 npx hardhat deploy --network mainnet --tags mainnet_GenesisSaleRewardAirdrop_deploy
 npx hardhat deploy --network mainnet --tags mainnet_GenesisSaleRewardAirdrop_verify
 ```
+
+## Deploy and Verify contracts on Polygon Mainnet
+
+### ProxyAdmin
+
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_ProxyAdmin_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_ProxyAdmin_verify
+```
+
+### BiconomyMetaTxRelay
+
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_BiconomyMetaTxRelayUpgradeable_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_BiconomyMetaTxRelayUpgradeable_verify
+```
+
+### Ride NFT
+
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideUpgradeable_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideUpgradeable_verify
+```
+
+#### Grant RideUpgradeableFactory the FACTORIES role on the BiconomyMetaTxRelay
+
+* execute grantRole of BiconomyMetaTxRelay contract. The parameters are the value of BiconomyMetaTxRelay.FACTORIES and the address of RideUpgradeableFactory contract.
 
 ## Print out deployed contracts
 

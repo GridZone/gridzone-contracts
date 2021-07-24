@@ -10,7 +10,7 @@ module.exports = async ({ deployments }) => {
     from: deployer.address,
     args: [
       network_.ZONE.tokenAddress,
-      network_.ZONE.ownerAddress,
+      network_.Global.ownerAddress,
       network_.GenesisSaleRewardAirdrop.adminAddress,
     ],
   });

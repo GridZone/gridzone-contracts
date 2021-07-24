@@ -8,7 +8,7 @@ module.exports = async () => {
       address: genesisSaleRewardAirdrop.address,
       constructorArguments: [
         network_.ZONE.tokenAddress,
-        network_.ZONE.ownerAddress,
+        network_.Global.ownerAddress,
         network_.GenesisSaleRewardAirdrop.adminAddress,
       ],
       contract: "contracts/Airdrop/GenesisSaleRewardAirdrop.sol:GenesisSaleRewardAirdrop",

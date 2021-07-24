@@ -32,11 +32,15 @@ describe('GenesisSaleRewardAirdrop', () => {
   beforeEach(async () => {
     [deployer, a1, a2, ...accounts] = await ethers.getSigners();
 
-    await deployments.fixture(["hardhat"])
+    await deployments.fixture(["hardhat_mainnet"]);
 
-    owner = await ethers.getSigner(network_.ZONE.ownerAddress);
+    owner = await ethers.getSigner(network_.Global.ownerAddress);
     vault = await ethers.getSigner(network_.ZONE.vaultAddress);
     admin = await ethers.getSigner(network_.GenesisSaleRewardAirdrop.adminAddress);
+
+    await sendEth(a1.address, owner.address, '1');
+    await sendEth(a1.address, vault.address, '1');
+    await sendEth(a1.address, admin.address, '1');
 
     zoneToken = new ethers.Contract(network_.ZONE.tokenAddress, ZONE_ABI, deployer);
     airdropContract = await ethers.getContract("GenesisSaleRewardAirdrop")
@@ -60,7 +64,6 @@ describe('GenesisSaleRewardAirdrop', () => {
     });
 
     it('should has set admin address', async () => {
-      sendEth(a1.address, owner.address, '1');
       await expectRevert(airdropContract.setPendingAdmin(a1.address), "revert Ownable: caller is not the owner");
       await airdropContract.connect(owner).setPendingAdmin(a1.address);
       expect(await airdropContract.pendingAdmin()).to.equal(a1.address);
@@ -85,14 +88,11 @@ describe('GenesisSaleRewardAirdrop', () => {
     });
 
     it('should be activated to claim the rewards. should only admin allowed to claim', async () => {
-      sendEth(a1.address, admin.address, '1');
-      await expectRevert(airdropContract.claimReward(account1), "revert Restricted Access!");
+      await expectRevert(airdropContract.claimReward(account1), "revert Restricted access to admin!");
       await expectRevert(airdropContract.connect(admin).claimReward(account1), "revert The airdrop not activated yet");
     });
 
     it('should be claimed the rewards', async () => {
-      sendEth(a1.address, owner.address, '1');
-      sendEth(a1.address, admin.address, '1');
       await zoneToken.connect(vault).transfer(airdropContract.address, rewardSupply.toString());
 
       // activate airdrop
@@ -112,11 +112,12 @@ describe('GenesisSaleRewardAirdrop', () => {
 
       // withdraw the left token
       const leftAmount = rewardSupply.minus(rewardAmount);
+      const ownerBalance = await zoneToken.balanceOf(owner.address);
       expect(await zoneToken.balanceOf(airdropContract.address)).to.equal(leftAmount.toString());
       await expectRevert(airdropContract.withdrawLeftToken(), "revert Ownable: caller is not the owner");
       await airdropContract.connect(owner).withdrawLeftToken();
       expect(await zoneToken.balanceOf(airdropContract.address)).to.equal(0);
-      expect(await zoneToken.balanceOf(owner.address)).to.equal(leftAmount.toString());
+      expect(await zoneToken.balanceOf(owner.address)).to.equal(leftAmount.plus(ownerBalance.toString()).toString());
     });
   });
 

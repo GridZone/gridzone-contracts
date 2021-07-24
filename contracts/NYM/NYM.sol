@@ -14,15 +14,17 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "../lib/Ownable.sol";
+import "../lib/access/Ownable.sol";
 
 /**
- * @title Hashmasks contract
+ * @title NYM
  * @dev Extends ERC721 Non-Fungible Token Standard basic implementation
  */
 contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enumerable {
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -40,10 +42,10 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     uint256 private _mintPrice = 1e17; // 0.1 ETH
 
     // Token address to be rewarded
-    address private _rewardToken;
+    IERC20 public rewardToken;
 
     // Price to reward
-    uint256 private _rewardAmount = 462 * (10 ** 18);
+    uint256 public rewardAmount = 462 * (10 ** 18);
 
     // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
@@ -135,8 +137,12 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
     constructor (address nymLib_, address rewardToken_, address vault_) Ownable(msg.sender) public {
+        require(nymLib_ != address(0), "NYM: NYM library address is zero");
+        require(rewardToken_ != address(0), "NYM: reward token address is zero");
+        require(vault_ != address(0), "NYM: vault address is zero");
+
         nymLib = INymLib(nymLib_);
-        _rewardToken = rewardToken_;
+        rewardToken = IERC20(rewardToken_);
         vault = vault_;
 
         // register the supported interfaces to conform to ERC721 via ERC165
@@ -156,7 +162,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev Set the cap.
      */
     function setCapacity(uint256 cap) onlyOwner external {
-        require(totalSupply() <= cap, "capacity is less than the current supply");
+        require(totalSupply() <= cap, "NYM: capacity is less than the current supply");
 
         _cap = cap;
         emit NewCapacity(_cap);
@@ -178,42 +184,29 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     }
 
     /**
-     * @dev Returns the address of the reward token.
-     */
-    function rewardToken() external view returns (address) {
-        return _rewardToken;
-    }
-
-    /**
      * @dev Set the address of the reward token.
      */
     function setRewardToken(address tokenAddress) onlyOwner external {
-        _rewardToken = tokenAddress;
-        emit NewRewardToken(_rewardToken);
-    }
-
-    /**
-     * @dev Returns the amound to be rewarded.
-     */
-    function rewardAmount() external view returns (uint256) {
-        return _rewardAmount;
+        require(tokenAddress != address(0), "NYM: token address is zero");
+        rewardToken = IERC20(tokenAddress);
+        emit NewRewardToken(tokenAddress);
     }
 
     /**
      * @dev Set the amound to be rewarded.
      */
     function setRewardAmount(uint256 amount) onlyOwner external {
-        _rewardAmount = amount;
-        emit NewRewardAmount(_rewardAmount);
+        rewardAmount = amount;
+        emit NewRewardAmount(rewardAmount);
     }
 
     /**
      * @dev See {IERC721-balanceOf}.
      */
-    function balanceOf(address owner) public view override returns (uint256) {
-        require(owner != address(0), "ERC721: balance query for the zero address");
+    function balanceOf(address tokenOwner) public view override returns (uint256) {
+        require(tokenOwner != address(0), "ERC721: balance query for the zero address");
 
-        return _holderTokens[owner].length();
+        return _holderTokens[tokenOwner].length();
     }
 
     /**
@@ -270,8 +263,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     /**
      * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
      */
-    function tokenOfOwnerByIndex(address owner, uint256 index) public view override returns (uint256) {
-        return _holderTokens[owner].at(index);
+    function tokenOfOwnerByIndex(address tokenOwner, uint256 index) public view override returns (uint256) {
+        return _holderTokens[tokenOwner].at(index);
     }
 
     /**
@@ -333,19 +326,19 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
             _tokenName[tokenId] = newName;
         }
 
-        if (_rewardToken != address(0) && 0 < _rewardAmount) {
-            TransferHelper.safeTransfer(_rewardToken, sender, _rewardAmount);
+        if (0 < rewardAmount) {
+            rewardToken.safeTransfer(sender, rewardAmount);
         }
         emit NewNym(tokenId, newName);
     }
 
     /**
-     * @dev Changes the name for Hashmask tokenId
+     * @dev Changes the name for tokenId
      */
     function changeName(uint256 tokenId, string memory newName) public {
-        address owner = ownerOf(tokenId);
+        address tokenOwner = ownerOf(tokenId);
 
-        require(_msgSender() == owner, "ERC721: caller is not the owner");
+        require(_msgSender() == tokenOwner, "ERC721: caller is not the token owner");
         require(validateName(newName) == true, "Not a valid new name");
         require(sha256(bytes(newName)) != sha256(bytes(_tokenName[tokenId])), "New name is same as the current one");
         require(isNameReserved(newName) == false, "Name already reserved");
@@ -355,15 +348,13 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
         }
         toggleReserveName(newName, true);
         _tokenName[tokenId] = newName;
-        emit NameChange(tokenId, newName);
+        emit NameChange(tokenId, _tokenName[tokenId]);
     }
 
     /**
      * @dev Withdraw ether from this contract (Callable by owner)
     */
     function withdraw() onlyOwner external {
-        require(vault != address(0), "ERC721: withdraw to the zero address");
-
         uint balance = address(this).balance;
         TransferHelper.safeTransferETH(vault, balance);
     }
@@ -372,12 +363,9 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev Withdraw tokens from this contract (Callable by owner)
     */
     function withdrawRewardToken() onlyOwner external {
-        require(vault != address(0), "ERC721: withdraw to the zero address");
-        require(_rewardToken != address(0), "ERC721: reward token address is zero");
-
-        uint256 tokenBalance = IERC20(_rewardToken).balanceOf(address(this));
+        uint256 tokenBalance = rewardToken.balanceOf(address(this));
         if (0 < tokenBalance) {
-            TransferHelper.safeTransfer(_rewardToken, vault, tokenBalance);
+            rewardToken.safeTransfer(vault, tokenBalance);
         }
     }
 
@@ -385,11 +373,11 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev See {IERC721-approve}.
      */
     function approve(address to, uint256 tokenId) public virtual override {
-        address owner = ownerOf(tokenId);
-        require(to != owner, "ERC721: approval to current owner");
+        address tokenOwner = ownerOf(tokenId);
+        require(to != tokenOwner, "ERC721: approval to current token owner");
 
-        require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-            "ERC721: approve caller is not owner nor approved for all"
+        require(_msgSender() == tokenOwner || isApprovedForAll(tokenOwner, _msgSender()),
+            "ERC721: approve caller is not token owner nor approved for all"
         );
 
         _approve(to, tokenId);
@@ -417,8 +405,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     /**
      * @dev See {IERC721-isApprovedForAll}.
      */
-    function isApprovedForAll(address owner, address operator) public view override returns (bool) {
-        return _operatorApprovals[owner][operator];
+    function isApprovedForAll(address tokenOwner, address operator) public view override returns (bool) {
+        return _operatorApprovals[tokenOwner][operator];
     }
 
     /**
@@ -443,7 +431,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     }
 
     function _safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) internal virtual {
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not token owner nor approved");
         _safeTransfer(from, to, tokenId, _data);
     }
 
@@ -492,8 +480,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      */
     function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
         require(_exists(tokenId), "ERC721: operator query for nonexistent token");
-        address owner = ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
+        address tokenOwner = ownerOf(tokenId);
+        return (spender == tokenOwner || getApproved(tokenId) == spender || isApprovedForAll(tokenOwner, spender));
     }
 
     /**
@@ -555,9 +543,9 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * Emits a {Transfer} event.
      */
     function _burn(uint256 tokenId) internal virtual {
-        address owner = ownerOf(tokenId);
+        address tokenOwner = ownerOf(tokenId);
 
-        _beforeTokenTransfer(owner, address(0), tokenId);
+        _beforeTokenTransfer(tokenOwner, address(0), tokenId);
 
         // Clear approvals
         _approve(address(0), tokenId);
@@ -567,11 +555,11 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
             delete _tokenURIs[tokenId];
         }
 
-        _holderTokens[owner].remove(tokenId);
+        _holderTokens[tokenOwner].remove(tokenId);
 
         _tokenOwners.remove(tokenId);
 
-        emit Transfer(owner, address(0), tokenId);
+        emit Transfer(tokenOwner, address(0), tokenId);
     }
 
     /**
@@ -591,7 +579,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
 
         _beforeTokenTransfer(from, to, tokenId);
 
-        // Clear approvals from the previous owner
+        // Clear approvals from the previous token owner
         _approve(address(0), tokenId);
 
         _holderTokens[from].remove(tokenId);
@@ -731,8 +719,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev Store the IPFS hash of the user icon in 32 bytes hex
      */
     function storeIPFSHashHex(uint256 tokenId, bytes32 ipfsHashHex) external {
-        address owner = ownerOf(tokenId);
-        require(_msgSender() == owner, "ERC721: caller is not the owner");
+        address tokenOwner = ownerOf(tokenId);
+        require(_msgSender() == tokenOwner, "NYM: caller is not the token owner");
 
         ipfsHashesInHexadecimal[tokenId] = ipfsHashHex;
     }

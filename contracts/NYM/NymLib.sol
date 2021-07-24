@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.7.6;
 
-import "../lib/Base58.sol";
+import "../lib/encode/Base58.sol";
 
 /**
  * @title NymLib

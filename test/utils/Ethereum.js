@@ -7,6 +7,10 @@ function UInt256Max() {
   return ethers.constants.MaxUint256;
 }
 
+function AddressZero() {
+  return ethers.constants.AddressZero;
+}
+
 function address(n) {
   return `0x${n.toString(16).padStart(40, '0')}`;
 }
@@ -173,5 +177,6 @@ module.exports = {
 
   both,
   sendFallback,
-  UInt256Max
+  UInt256Max,
+  AddressZero,
 };

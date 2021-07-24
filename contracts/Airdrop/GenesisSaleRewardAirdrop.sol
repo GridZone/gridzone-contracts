@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol"; 
 
-import "../lib/Ownable.sol";
+import "../lib/access/Ownable.sol";
 
 contract GenesisSaleRewardAirdrop is Ownable {
     using SafeERC20 for IERC20;
@@ -36,7 +36,7 @@ contract GenesisSaleRewardAirdrop is Ownable {
     event RewardClaimed(address indexed account, uint256 purchasedAmount, uint256 rewardAmount);
 
     modifier onlyAdmin() {
-        require(admin == _msgSender(), "Restricted Access!");
+        require(admin == _msgSender(), "Restricted access to admin!");
         _;
     }
 

@@ -6,6 +6,24 @@ require("hardhat-deploy-ethers");
 require("hardhat-gas-reporter");
 require("dotenv").config();
 
+// This is a sample Hardhat task. To learn how to create your own go to
+// https://hardhat.org/guides/create-task.html
+task("accounts", "Prints the list of accounts", async () => {
+  const accounts = await ethers.getSigners();
+
+  for (const account of accounts) {
+    console.log(account.address);
+  }
+});
+
+// You need to export an object to set up your config
+// Go to https://hardhat.org/config/ to learn more
+
+const isPolygon = (process.env.BLOCKCHAIN === 'polygon') ? true : false;
+const apiKey = isPolygon ? process.env.POLYGONSCAN_API_KEY : process.env.ETHERSCAN_API_KEY;
+const mainnetUrl = isPolygon ? process.env.ALCHEMY_URL_POLYGON_MAINNET : process.env.ALCHEMY_URL_MAINNET;
+const mainnetBlockNumber = isPolygon ? 16791223 : 12799732;
+
 module.exports = {
   solidity: {
     compilers: [{
@@ -21,8 +39,8 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.ALCHEMY_URL_MAINNET,
-        blockNumber: 12556695,
+        url: mainnetUrl,
+        blockNumber: mainnetBlockNumber,
       },
     },
     mainnet: {
@@ -32,12 +50,23 @@ module.exports = {
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY]
-    }
+    },
+    polygonMainnet: {
+      url: `https://rpc-mainnet.maticvigil.com/`,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    polygonMumbai: {
+      url: `https://rpc-mumbai.maticvigil.com`,
+      accounts: [process.env.PRIVATE_KEY]
+    },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: apiKey
   },
   gasReporter: {
     enabled: true
+  },
+  mocha: {
+    timeout: 50000
   },
 };
