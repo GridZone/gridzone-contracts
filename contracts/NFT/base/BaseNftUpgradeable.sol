@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
+import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
 import "../../lib/access/OwnableUpgradeable.sol";
 import "../../lib/opensea/OpenseaERC721Upgradeable.sol";
-import "./IRideUpgradeable.sol";
+import "./IBaseNftUpgradeable.sol";
 
 interface ISLPToken is IERC20Upgradeable {
     function getReserves() external view returns (uint112, uint112, uint32);
@@ -15,10 +17,10 @@ interface ISLPToken is IERC20Upgradeable {
 }
 
 /**
- * @title RideUpgradeable
+ * @title BaseNftUpgradeable
  * @dev Extends ERC721 Non-Fungible Token Standard basic implementation
  */
-contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721Upgradeable {
+contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaERC721Upgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
 
@@ -51,7 +53,13 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
     // Mapping if certain name string has already been reserved
     mapping (uint256 => bytes4[]) private _colors;
 
+    // Admin address to do airdrop
+    address private _admin;
+    // The block number of airdrop to the user. only one time airdrop is allowed per user.
+    mapping (address => uint256) public airdropBlockNumber;
+
     // Events
+    event NewAdmin(address indexed newAdmin);
     event NewOpenseaProxyRegistry (address indexed proxyRegistryAddress);
     event NewUri (string newUri);
     event NewMintPrice (uint256 indexed newMintPrice);
@@ -59,12 +67,17 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
     event NameChange (uint256 indexed tokenId, string newName);
     event ColorChange (uint256 indexed tokenId, bytes4[] newColor);
 
+    modifier onlyAdmin() {
+        require(_admin == _msgSender(), "Restricted access to admin");
+        _;
+    }
+
     /**
      * @notice Initializes the contract.
      * @param _ownerAddress Address of owner
-     * @param _name Name of ride ride
-     * @param _symbol Symbol of the ride
-     * @param _rideUri URI of information file for the ride
+     * @param _name Name of NFT
+     * @param _symbol Symbol of NFT
+     * @param _metafileUri URI of information file for the NFT
      * @param _capacity Capacity of token, If this value is 0, no limited.
      * @param _price Minting price in ETH
      * @param _zoneToken ZONE token address
@@ -77,7 +90,7 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
         address _ownerAddress,
         string memory _name,
         string memory _symbol,
-        string memory _rideUri,
+        string memory _metafileUri,
         uint256 _capacity,
         uint256 _price,
         address _zoneToken,
@@ -92,7 +105,7 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
 
         __Ownable_init(_ownerAddress);
 		__OpenseaERC721_init_unchained(_name, _symbol, address(0));
-        _uri = _rideUri;
+        _uri = _metafileUri;
         capacity = (0 < _capacity) ? _capacity : type(uint256).max;
         _mintPrice = _price;
         zoneToken = IERC20Upgradeable(_zoneToken);
@@ -100,10 +113,27 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
         nameChangeable = _nameChangeable;
         colorChangeable = _colorChangeable;
         _defaultColor = _color;
+
+        _admin = _ownerAddress;
     }
 
     function _msgSender() internal override view returns (address payable) {
         return EIP712MetaTxUpgradeable.msgSender();
+    }
+
+    /**
+     * @dev Return admin address for the airdrop
+     */
+    function getAdmin() external view returns(address) {
+        return _admin;
+    }
+
+    /**
+     * @dev Update admin address
+     */
+    function setAdmin(address _adminAddress) external onlyOwner() {
+        _admin = _adminAddress;
+        emit NewAdmin(_admin);
     }
 
     /**
@@ -122,8 +152,8 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
         return _uri;
     }
 
-    function setUri(string memory _rideUri) external onlyOwner() {
-        _uri = _rideUri;
+    function setUri(string memory _metafileUri) external onlyOwner() {
+        _uri = _metafileUri;
         emit NewUri(_uri);
     }
 
@@ -194,25 +224,60 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
      * @dev Airdrop tokens to the specifeid addresses (Callable by owner).
      *      The count is limited as 30 to avoid spending much gas and to avoid exceed block gas limit.
      */
-    function doAirdrop(address[] memory accounts) external onlyOwner() {
-        require(0 < accounts.length, "Ride: No account address");
-        require(accounts.length <= 30, "Exceeds limit");
-        require((totalSupply() + accounts.length) <= capacity, "Exceeds capacity");
+    function doAirdrop(address[] memory _accounts) external onlyAdmin() {
+        require(0 < _accounts.length, "Nft: No account address");
+        require(_accounts.length <= 30, "Exceeds limit");
+        require((totalSupply() + _accounts.length) <= capacity, "Exceeds capacity");
 
         bytes4[] memory emptyColor = new bytes4[](0);
 
-        for (uint i = 0; i < accounts.length; i ++) {
+        for (uint i = 0; i < _accounts.length; i ++) {
+            address account = _accounts[i];
+            require(airdropBlockNumber[account] == 0, "Only one time airdrop is allowed per user");
+            airdropBlockNumber[account] = block.number;
+
             uint tokenId = ++ _currentTokenId;
-            _safeMint(accounts[i], tokenId);
+            _safeMint(account, tokenId);
             emit NewToken(tokenId, "", emptyColor);
         }
+    }
+
+    function doAirdropBySignature(address[] memory _accounts, bytes[] memory _signatures) external {
+        require(0 < _accounts.length, "Nft: No account address");
+        require(_accounts.length <= 30, "Exceeds limit");
+        require(_accounts.length == _signatures.length, "Mismatch the parameters");
+        require((totalSupply() + _accounts.length) <= capacity, "Exceeds capacity");
+
+        bytes4[] memory emptyColor = new bytes4[](0);
+
+        for (uint i = 0; i < _accounts.length; i ++) {
+            address account = _accounts[i];
+            require(airdropBlockNumber[account] == 0, "Only one time airdrop is allowed per user");
+            airdropBlockNumber[account] = block.number;
+
+            bytes memory signature = _signatures[i];
+            require(_isValidSignature(account, signature), "The specified account is not allowed for airdrop");
+
+            uint tokenId = ++ _currentTokenId;
+            _safeMint(account, tokenId);
+            emit NewToken(tokenId, "", emptyColor);
+        }
+    }
+
+    function _isValidSignature(address _account, bytes memory _signature) internal view returns (bool) {
+        bytes32 message = keccak256(abi.encodePacked(address(this), _account));
+        bytes32 messageHash = ECDSAUpgradeable.toEthSignedMessageHash(message);
+
+        // check that the signature is from admin signer.
+        address recoveredAddress = ECDSAUpgradeable.recover(messageHash, _signature);
+        return (recoveredAddress == _admin) ? true : false;
     }
 
     /**
      * @dev Withdraw tokens from this contract (Callable by owner)
      */
     function withdraw() external onlyOwner() {
-        require(owner() != address(0), "Ride: withdraw to the zero address");
+        require(owner() != address(0), "Nft: withdraw to the zero address");
 
         uint256 balance = zoneToken.balanceOf(address(this));
         if (0 < balance) {
@@ -238,15 +303,15 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
      * @dev Changes the name for tokenId
      */
     function changeName(uint256 tokenId, string memory newName) external {
-        require(_msgSender() == ownerOf(tokenId), "Ride: caller is not the token owner");
-        require(sha256(bytes(newName)) != sha256(bytes(_tokenName[tokenId])), "Ride: new name is same as the current one");
+        require(_msgSender() == ownerOf(tokenId), "Nft: caller is not the token owner");
+        require(sha256(bytes(newName)) != sha256(bytes(_tokenName[tokenId])), "Nft: new name is same as the current one");
         _changeName(tokenId, newName);
     }
 
     function _changeName(uint256 tokenId, string memory newName) internal {
-        require(nameChangeable == true, "Ride: disabled to change name");
-        require(validateName(newName) == true, "Ride: invalid name");
-        require(isNameReserved(newName) == false, "Ride: name already reserved");
+        require(nameChangeable == true, "Nft: disabled to change name");
+        require(validateName(newName) == true, "Nft: invalid name");
+        require(isNameReserved(newName) == false, "Nft: name already reserved");
 
         if (bytes(_tokenName[tokenId]).length > 0) {
             toggleReserveName(_tokenName[tokenId], false);
@@ -332,18 +397,18 @@ contract RideUpgradeable is IRideUpgradeable, OwnableUpgradeable, OpenseaERC721U
      * @dev Changes the color for tokenId
      */
     function changeColor(uint256 tokenId, bytes4[] memory color) external {
-        require(_msgSender() == ownerOf(tokenId), "Ride: caller is not the token owner");
+        require(_msgSender() == ownerOf(tokenId), "Nft: caller is not the token owner");
         _changeColor(tokenId, color);
     }
 
     function _changeColor(uint256 tokenId, bytes4[] memory color) internal {
-        require(colorChangeable == true, "Ride: disabled to change color");
-        require(0 < color.length, "Ride: no color");
-        require(_defaultColor.length == color.length, "Ride: color length mismatch");
+        require(colorChangeable == true, "Nft: disabled to change color");
+        require(0 < color.length, "Nft: no color");
+        require(_defaultColor.length == color.length, "Nft: color length mismatch");
 
         _colors[tokenId] = color;
         emit ColorChange(tokenId, _colors[tokenId]);
     }
 
-    uint256[38] private __gap;
+    uint256[36] private __gap;
 }

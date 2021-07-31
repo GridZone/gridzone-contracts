@@ -8,14 +8,14 @@ module.exports = async ({ deployments }) => {
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
   const biconomyMetaTxRelay = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
 
-  console.log("Now deploying RideUpgradeable on Polygon Mumbai...");
-  const rideUpgradeable = await deploy("RideUpgradeable", {
+  console.log("Now deploying BaseNftUpgradeable on Polygon Mumbai...");
+  const baseNftUpgradeable = await deploy("BaseNftUpgradeable", {
     from: deployer.address,
   });
-  console.log("RideUpgradeable template contract address: ", rideUpgradeable.address);
+  console.log("BaseNftUpgradeable template contract address: ", baseNftUpgradeable.address);
 
-  // console.log("Now deploying RideUpgradeableProxy for just verification on Polygon Mumbai...");
-  // const implArtifact = await deployments.getArtifact("RideUpgradeable");
+  // console.log("Now deploying RideNftUpgradeableProxy for just verification on Polygon Mumbai...");
+  // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
   // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   // const data = iface.encodeFunctionData("initialize", [
   //   network_.Global.ownerAddress,
@@ -30,28 +30,28 @@ module.exports = async ({ deployments }) => {
   //   false,
   //   []
   // ]);
-  // const rideUpgradeableProxy = await deploy("RideUpgradeableProxy", {
+  // const rideNftUpgradeableProxy = await deploy("RideNftUpgradeableProxy", {
   //   from: deployer.address,
   //   args: [
-  //     rideUpgradeable.address,
+  //     baseNftUpgradeable.address,
   //     proxyAdmin.address,
   //     data,
   //   ],
   // });
-  // console.log("RideUpgradeableProxy template contract address: ", rideUpgradeableProxy.address);
+  // console.log("RideNftUpgradeableProxy template contract address: ", rideNftUpgradeableProxy.address);
 
-  console.log("Now deploying RideUpgradeableFactory on Polygon Mumbai...");
-  const rideUpgradeableFactory = await deploy("RideUpgradeableFactory", {
+  console.log("Now deploying RideNftFactory on Polygon Mumbai...");
+  const rideNftFactory = await deploy("RideNftFactory", {
     from: deployer.address,
     args: [
       network_.Global.ownerAddress,
       proxyAdmin.address,
-      rideUpgradeable.address,
+      baseNftUpgradeable.address,
       network_.ZONE.tokenAddress,
       network_.Global.slpZoneEth,
       biconomyMetaTxRelay.address,
     ],
   });
-  console.log("RideUpgradeableFactory contract address: ", rideUpgradeableFactory.address);
+  console.log("RideNftFactory contract address: ", rideNftFactory.address);
 };
-module.exports.tags = ["polygonMumbai_RideUpgradeable_deploy"];
+module.exports.tags = ["polygonMumbai_RideNft_deploy"];

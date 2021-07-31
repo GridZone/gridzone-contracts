@@ -88,13 +88,20 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_BiconomyMetaTx
 ### Ride NFT
 
 ```text
-npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideUpgradeable_deploy
-npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideUpgradeable_verify
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideNft_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_RideNft_verify
 ```
 
-#### Grant RideUpgradeableFactory the FACTORIES role on the BiconomyMetaTxRelay
+### NymFashion NFT
 
-* execute grantRole of BiconomyMetaTxRelay contract. The parameters are the value of BiconomyMetaTxRelay.FACTORIES and the address of RideUpgradeableFactory contract.
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_verify
+```
+
+#### Grant RideNftFactory and NymFashionFactory the FACTORIES role on the BiconomyMetaTxRelay
+
+* execute grantRole of BiconomyMetaTxRelay contract. The parameters are the value of BiconomyMetaTxRelay.FACTORIES and the address of factory contracts.
 
 ## Print out deployed contracts
 

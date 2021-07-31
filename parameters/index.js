@@ -27,6 +27,7 @@ module.exports = {
   polygonMainnet: {
     Global: {
       ownerAddress: "0xF55b56C7a98412fB96e9b191974Ab8fc49547064",  // TODO: Update after ZONE token deployed on Polygon Mainnet
+      adminAddress: "0xeFd9928Aa5A192C0267CdAed43235006B7A28628",  // TODO: Update with correct address. It's used for airdrop
       slpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Update after ZONE token deployed on Polygon Mainnet
     },
     ZONE: {
@@ -40,6 +41,7 @@ module.exports = {
   polygonMumbai: {
     Global: {
       ownerAddress: "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+      adminAddress: "0xeFd9928Aa5A192C0267CdAed43235006B7A28628",  // TODO: Update with correct address. It's used for airdrop
       slpZoneEth: "0x5B45C620B4316B9316542C65B0680d4E621E9CCF",
       sushiRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",  // This is only needed to add SLP on the Mumbai, because Sushi doesn't support well Mumbai
       WETH: "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",  // This is only needed to add SLP on the Mumbai, because Sushi doesn't support well Mumbai

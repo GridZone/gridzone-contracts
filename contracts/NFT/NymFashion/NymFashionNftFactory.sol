@@ -2,35 +2,35 @@
 pragma solidity 0.7.6;
 
 import "../../lib/access/Ownable.sol";
-import "./IRideUpgradeable.sol";
-import "./RideUpgradeableProxy.sol";
+import "../base/IBaseNftUpgradeable.sol";
+import "./NymFashionNftUpgradeableProxy.sol";
 import "../../BiconomyRelay/IBiconomyMetaTxRelay.sol";
 
-contract RideUpgradeableFactory is Ownable {
+contract NymFashionNftFactory is Ownable {
     address public proxyAdminAddress;
-    address public rideTemplate;
+    address public impl;
     address public zoneToken;
     address public slpZoneEth;
 
     IBiconomyMetaTxRelay public relayerAddress;
-    RideUpgradeableProxy[] public rides;
+    address[] public nfts;
 
-    event NewRide (address indexed ride,
-        string name, string _symbol, string _rideUri, uint256 _capacity,
-        uint256 _price, bool _nameChangeable, bool _colorChangeable, bytes4[] _color);
+    event NewNFT (address indexed nft,
+        string name, string symbol, string metafileUri, uint256 capacity,
+        uint256 price, bool nameChangeable, bool colorChangeable, bytes4[] color);
 
-    constructor(address _ownerAddress, address _proxyAdminAddress, address _rideTemplate,
+    constructor(address _ownerAddress, address _proxyAdminAddress, address _impl,
         address _zoneToken, address _slpZoneEth, address _relayerAddress
     ) Ownable(_ownerAddress) public {
         require(_ownerAddress != address(0), "Owner address is invalid");
         require(_proxyAdminAddress != address(0), "Proxy admin address is invalid");
-        require(_rideTemplate != address(0), "Ride template address is invalid");
+        require(_impl != address(0), "NFT implementation template address is invalid");
         require(_zoneToken != address(0), "ZONE token address is invalid");
         require(_slpZoneEth != address(0), "Sushiswap LP token address is invalid");
         require(_relayerAddress != address(0), "MetaTransaction relayer is invalid");
 
         proxyAdminAddress = _proxyAdminAddress;
-        rideTemplate = _rideTemplate;
+        impl = _impl;
         zoneToken = _zoneToken;
         slpZoneEth = _slpZoneEth;
 
@@ -38,20 +38,20 @@ contract RideUpgradeableFactory is Ownable {
     }
 
     /**
-     * @notice Create new ride.
-     * @param _name Name of ride ride
-     * @param _symbol Symbol of the ride
-     * @param _rideUri URI of information file for the ride
+     * @notice Create new NFT.
+     * @param _name Name of NFT
+     * @param _symbol Symbol of NFT
+     * @param _metafileUri URI of information file for the NFT
      * @param _capacity Capacity of token, If this value is 0, no limited.
      * @param _price Minting price in ETH
      * @param _nameChangeable Option to changeable name
      * @param _colorChangeable Option to changeable color
      * @param _color Default color
      */
-    function createRide(
+    function createNFT(
         string memory _name,
         string memory _symbol,
-        string memory _rideUri,
+        string memory _metafileUri,
         uint256 _capacity,
         uint256 _price,
         bool _nameChangeable,
@@ -61,11 +61,11 @@ contract RideUpgradeableFactory is Ownable {
         require(0 < bytes(_name).length, "Factory: name is empty");
         require(0 < bytes(_symbol).length, "Factory: symbol is empty");
 
-        bytes memory data = abi.encodeWithSelector(IRideUpgradeable(0).initialize.selector,
+        bytes memory data = abi.encodeWithSelector(IBaseNftUpgradeable(0).initialize.selector,
             owner(),
             _name,
             _symbol,
-            _rideUri,
+            _metafileUri,
             _capacity,
             _price,
             zoneToken,
@@ -75,10 +75,10 @@ contract RideUpgradeableFactory is Ownable {
             _color
         );
 
-        RideUpgradeableProxy ride = new RideUpgradeableProxy(rideTemplate, proxyAdminAddress, data);
-        relayerAddress.allowRelay(address(ride));
-        rides.push(ride);
-        emit NewRide(address(ride), _name, _symbol, _rideUri, _capacity, _price, _nameChangeable, _colorChangeable, _color);
+        address nft = address(new NymFashionNftUpgradeableProxy(impl, proxyAdminAddress, data));
+        relayerAddress.allowRelay(nft);
+        nfts.push(nft);
+        emit NewNFT(nft, _name, _symbol, _metafileUri, _capacity, _price, _nameChangeable, _colorChangeable, _color);
     }
 
 }

@@ -5,17 +5,17 @@ module.exports = async () => {
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
   const biconomyMetaTxRelay = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
 
-  const rideUpgradeable = await ethers.getContract("RideUpgradeable");
+  const baseNftUpgradeable = await ethers.getContract("BaseNftUpgradeable");
   try {
     await run("verify:verify", {
-      address: rideUpgradeable.address,
-      contract: "contracts/NFT/Ride/RideUpgradeable.sol:RideUpgradeable",
+      address: baseNftUpgradeable.address,
+      contract: "contracts/NFT/Ride/BaseNftUpgradeable.sol:BaseNftUpgradeable",
     });
   } catch(e) {
   }
 
-  // const rideUpgradeableProxy = await ethers.getContract("RideUpgradeableProxy");
-  // const implArtifact = await deployments.getArtifact("RideUpgradeable");
+  // const rideNftUpgradeableProxy = await ethers.getContract("RideNftUpgradeableProxy");
+  // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
   // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   // const data = iface.encodeFunctionData("initialize", [
   //   network_.Global.ownerAddress,
@@ -32,32 +32,32 @@ module.exports = async () => {
   // ]);
   // try {
   //   await run("verify:verify", {
-  //     address: rideUpgradeableProxy.address,
+  //     address: rideNftUpgradeableProxy.address,
   //     constructorArguments: [
-  //       rideUpgradeable.address,
+  //       baseNftUpgradeable.address,
   //       proxyAdmin.address,
   //       data,
   //     ],
-  //     contract: "contracts/NFT/Ride/RideUpgradeableProxy.sol:RideUpgradeableProxy",
+  //     contract: "contracts/NFT/Ride/RideNftUpgradeableProxy.sol:RideNftUpgradeableProxy",
   //   });
   // } catch(e) {
   // }
 
-  const rideUpgradeableFactory = await ethers.getContract("RideUpgradeableFactory");
+  const rideNftFactory = await ethers.getContract("RideNftFactory");
   try {
     await run("verify:verify", {
-      address: rideUpgradeableFactory.address,
+      address: rideNftFactory.address,
       constructorArguments: [
         network_.Global.ownerAddress,
         proxyAdmin.address,
-        rideUpgradeable.address,
+        baseNftUpgradeable.address,
         network_.ZONE.tokenAddress,
         network_.Global.slpZoneEth,
         biconomyMetaTxRelay.address,
       ],
-      contract: "contracts/NFT/Ride/RideUpgradeableFactory.sol:RideUpgradeableFactory",
+      contract: "contracts/NFT/Ride/RideNftFactory.sol:RideNftFactory",
     });
   } catch(e) {
   }
 };
-module.exports.tags = ["polygonMumbai_RideUpgradeable_verify"];
+module.exports.tags = ["polygonMumbai_RideNft_verify"];
