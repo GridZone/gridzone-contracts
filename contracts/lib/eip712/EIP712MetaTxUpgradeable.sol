@@ -54,11 +54,12 @@ contract EIP712MetaTxUpgradeable is EIP712BaseUpgradeable {
         require(verify(userAddress, metaTx, sigR, sigS, sigV), "EIP712MetaTx: Signer and signature do not match");
 
         _nonces[userAddress] = _nonces[userAddress].add(1);
+        emit MetaTransactionExecuted(userAddress, msg.sender, functionSignature);
+
         // Append userAddress at the end to extract it from calling context
         (bool success, bytes memory returnData) = address(this).call(abi.encodePacked(functionSignature, userAddress));
-
         require(success, "EIP712MetaTx: Function call not successful");
-        emit MetaTransactionExecuted(userAddress, msg.sender, functionSignature);
+
         return returnData;
     }
 
@@ -95,5 +96,5 @@ contract EIP712MetaTxUpgradeable is EIP712BaseUpgradeable {
         return sender;
     }
 
-    uint256[48] private __gap;
+    uint256[49] private __gap;
 }

@@ -6,23 +6,25 @@ module.exports = async ({ deployments }) => {
   const [deployer] = await ethers.getSigners();
 
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
+  const nymLibUpgradeableProxy = await deployments.get("NymLibUpgradeableProxy");
+  const priceOracleUpgradeableProxy = await deployments.get("PriceOracleUpgradeableProxy");
   const biconomyMetaTxRelay = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
 
   console.log("Now deploying BaseNftUpgradeable on Polygon Mainnet...");
-  const baseNftUpgradeable = await deploy("BaseNftUpgradeable", {
+  const impl = await deploy("BaseNftUpgradeable", {
     from: deployer.address,
   });
-  console.log("BaseNftUpgradeable template contract address: ", baseNftUpgradeable.address);
+  console.log("BaseNftUpgradeable template contract address: ", impl.address);
 
   console.log("Now deploying RideNftFactory on Polygon Mainnet...");
   const factory = await deploy("RideNftFactory", {
     from: deployer.address,
     args: [
+      nymLibUpgradeableProxy.address,
+      priceOracleUpgradeableProxy.address,
       network_.Global.ownerAddress,
       proxyAdmin.address,
-      baseNftUpgradeable.address,
-      network_.ZONE.tokenAddress,
-      network_.Global.slpZoneEth,
+      impl.address,
       biconomyMetaTxRelay.address,
     ],
   });

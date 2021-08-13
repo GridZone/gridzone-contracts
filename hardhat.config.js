@@ -22,7 +22,7 @@ task("accounts", "Prints the list of accounts", async () => {
 const isPolygon = (process.env.BLOCKCHAIN === 'polygon') ? true : false;
 const apiKey = isPolygon ? process.env.POLYGONSCAN_API_KEY : process.env.ETHERSCAN_API_KEY;
 const mainnetUrl = isPolygon ? process.env.ALCHEMY_URL_POLYGON_MAINNET : process.env.ALCHEMY_URL_MAINNET;
-const mainnetBlockNumber = isPolygon ? 16791223 : 12799732;
+const mainnetBlockNumber = isPolygon ? 17560298 : 12799732;
 
 module.exports = {
   solidity: {
@@ -31,7 +31,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 1000
+          runs: 200
         }
       }
     }],

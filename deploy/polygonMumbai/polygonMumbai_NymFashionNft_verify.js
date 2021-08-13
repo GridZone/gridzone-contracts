@@ -3,12 +3,14 @@ const { polygonMumbai: network_ } = require("../../parameters");
 
 module.exports = async () => {
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
+  const nymLibUpgradeableProxy = await ethers.getContract("NymLibUpgradeableProxy");
+  const priceOracleUpgradeableProxy = await ethers.getContract("PriceOracleUpgradeableProxy");
   const biconomyMetaTxRelay = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
 
-  const baseNftUpgradeable = await ethers.getContract("BaseNftUpgradeable");
+  const impl = await ethers.getContract("BaseNftUpgradeable");
   try {
     await run("verify:verify", {
-      address: baseNftUpgradeable.address,
+      address: impl.address,
       contract: "contracts/NFT/base/BaseNftUpgradeable.sol:BaseNftUpgradeable",
     });
   } catch(e) {
@@ -18,14 +20,14 @@ module.exports = async () => {
   // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
   // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   // const data = iface.encodeFunctionData("initialize", [
+  //   nymLibUpgradeableProxy.address,
+  //   priceOracleUpgradeableProxy.address,
   //   network_.Global.ownerAddress,
   //   "",
   //   "",
   //   "",
   //   1,
   //   "1000000000000000000",
-  //   network_.ZONE.tokenAddress,
-  //   network_.Global.slpZoneEth,
   //   false,
   //   false,
   //   []
@@ -34,7 +36,7 @@ module.exports = async () => {
   //   await run("verify:verify", {
   //     address: proxyContract.address,
   //     constructorArguments: [
-  //       baseNftUpgradeable.address,
+  //       impl.address,
   //       proxyAdmin.address,
   //       data,
   //     ],
@@ -48,11 +50,11 @@ module.exports = async () => {
     await run("verify:verify", {
       address: factory.address,
       constructorArguments: [
+        nymLibUpgradeableProxy.address,
+        priceOracleUpgradeableProxy.address,
         network_.Global.ownerAddress,
         proxyAdmin.address,
-        baseNftUpgradeable.address,
-        network_.ZONE.tokenAddress,
-        network_.Global.slpZoneEth,
+        impl.address,
         biconomyMetaTxRelay.address,
       ],
       contract: "contracts/NFT/NymFashion/NymFashionNftFactory.sol:NymFashionNftFactory",

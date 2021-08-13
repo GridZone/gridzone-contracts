@@ -48,11 +48,18 @@ npx hardhat compile
 
 You can deploy contracts and verify with etherscan API key.
 
-### Staking
+### ProxyAdmin
 
 ```text
-npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_deploy
-npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_verify
+npx hardhat deploy --network mainnet --tags mainnet_ProxyAdmin_deploy
+npx hardhat deploy --network mainnet --tags mainnet_ProxyAdmin_verify
+```
+
+### NymLib
+
+```text
+npx hardhat deploy --network mainnet --tags mainnet_NymLibUpgradeable_deploy
+npx hardhat deploy --network mainnet --tags mainnet_NymLibUpgradeable_verify
 ```
 
 ### NYM
@@ -60,6 +67,13 @@ npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_verify
 ```text
 npx hardhat deploy --network mainnet --tags mainnet_NYM_deploy
 npx hardhat deploy --network mainnet --tags mainnet_NYM_verify
+```
+
+### Staking
+
+```text
+npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_deploy
+npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_verify
 ```
 
 ### GenesisSaleRewardAirdrop
@@ -76,6 +90,20 @@ npx hardhat deploy --network mainnet --tags mainnet_GenesisSaleRewardAirdrop_ver
 ```text
 npx hardhat deploy --network polygonMainnet --tags polygonMainnet_ProxyAdmin_deploy
 npx hardhat deploy --network polygonMainnet --tags polygonMainnet_ProxyAdmin_verify
+```
+
+### NymLib
+
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymLibUpgradeable_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymLibUpgradeable_verify
+```
+
+### PriceOracle
+
+```text
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_PriceOracleUpgradeable_deploy
+npx hardhat deploy --network polygonMainnet --tags polygonMainnet_PriceOracleUpgradeable_verify
 ```
 
 ### BiconomyMetaTxRelay

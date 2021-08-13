@@ -47,5 +47,5 @@ contract EIP712BaseUpgradeable is Initializable {
         return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), messageHash));
     }
 
-    uint256[48] private __gap;
+    uint256[49] private __gap;
 }

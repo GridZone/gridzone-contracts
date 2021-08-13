@@ -6,26 +6,28 @@ module.exports = async ({ deployments }) => {
   const [deployer] = await ethers.getSigners();
 
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
+  const nymLibUpgradeableProxy = await deployments.get("NymLibUpgradeableProxy");
+  const priceOracleUpgradeableProxy = await deployments.get("PriceOracleUpgradeableProxy");
   const biconomyMetaTxRelay = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
 
   console.log("Now deploying BaseNftUpgradeable on Polygon Mumbai...");
-  const baseNftUpgradeable = await deploy("BaseNftUpgradeable", {
+  const impl = await deploy("BaseNftUpgradeable", {
     from: deployer.address,
   });
-  console.log("BaseNftUpgradeable template contract address: ", baseNftUpgradeable.address);
+  console.log("BaseNftUpgradeable template contract address: ", impl.address);
 
   // console.log("Now deploying NymFashionNftUpgradeableProxy for just verification on Polygon Mumbai...");
   // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
   // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   // const data = iface.encodeFunctionData("initialize", [
+  //   nymLibUpgradeableProxy.address,
+  //   priceOracleUpgradeableProxy.address,
   //   network_.Global.ownerAddress,
   //   "",
   //   "",
   //   "",
   //   1,
   //   "1000000000000000000",
-  //   network_.ZONE.tokenAddress,
-  //   network_.Global.slpZoneEth,
   //   false,
   //   false,
   //   []
@@ -33,7 +35,7 @@ module.exports = async ({ deployments }) => {
   // const proxyContract = await deploy("NymFashionNftUpgradeableProxy", {
   //   from: deployer.address,
   //   args: [
-  //     baseNftUpgradeable.address,
+  //     impl.address,
   //     proxyAdmin.address,
   //     data,
   //   ],
@@ -44,11 +46,11 @@ module.exports = async ({ deployments }) => {
   const factory = await deploy("NymFashionNftFactory", {
     from: deployer.address,
     args: [
+      nymLibUpgradeableProxy.address,
+      priceOracleUpgradeableProxy.address,
       network_.Global.ownerAddress,
       proxyAdmin.address,
-      baseNftUpgradeable.address,
-      network_.ZONE.tokenAddress,
-      network_.Global.slpZoneEth,
+      impl.address,
       biconomyMetaTxRelay.address,
     ],
   });
