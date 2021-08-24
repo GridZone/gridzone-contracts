@@ -30,7 +30,6 @@ module.exports = {
     Global: {
       ownerAddress: "0x4879712c5d1a98c0b88fb700daff5c65d12fd729",  // TODO: Update after ZONE token deployed on Polygon Mainnet
       proxyAdmin: "",  // TODO: Update after ProxyAdmin deployed
-      adminAddress: "0xeFd9928Aa5A192C0267CdAed43235006B7A28628",  // TODO: Update with correct address. It's used for airdrop
     },
     ZONE: {
       // tokenAddress: "0x5Ab64dAAAa458d8f2019C0a3F2275FDc27e498D1",
@@ -41,7 +40,7 @@ module.exports = {
     },
     PriceOracle: {
       contractAddress: "",  // TODO: Update after contract deployed
-      // slpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after ZONE token deployed on Polygon Mainnet
+      // slpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after SLP created on SushiSwap
       slpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Remove after slpZoneEth updated with correct address
       slpReserveWeight: 1000, // 10%
       usePoolPrice: false,
@@ -55,9 +54,8 @@ module.exports = {
   },
   polygonMumbai: {
     Global: {
-      ownerAddress: "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+      ownerAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
       proxyAdmin: "0xd35bd944019a32B54C185eF0B863096e89afAdcA",
-      adminAddress: "0xeFd9928Aa5A192C0267CdAed43235006B7A28628",  // TODO: Update with correct address. It's used for airdrop
       sushiRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",  // This is only needed to add SLP on the Mumbai, because Sushi doesn't support well Mumbai
       WETH: "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",  // This is only needed to add SLP on the Mumbai, because Sushi doesn't support well Mumbai
     },

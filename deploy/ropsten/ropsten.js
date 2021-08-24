@@ -6,6 +6,7 @@ module.exports = async () => {
   const nym = await deployments.get("NYM");
   const gridZoneStakingBot = await deployments.get("GridZoneStakingBot");
   const genesisSaleRewardAirdrop = await deployments.get("GenesisSaleRewardAirdrop");
+  const publicSaleUpgradeableProxy = await ethers.getContract("PublicSaleUpgradeableProxy");
 
   console.log("Summary on ropsten:");
   console.log("    ProxyAdmin address: ", proxyAdmin.address);
@@ -13,6 +14,7 @@ module.exports = async () => {
   console.log("    NYM address: ", nym.address);
   console.log("    GridZoneStakingBot address: ", gridZoneStakingBot.address);
   console.log("    GenesisSaleRewardAirdrop address: ", genesisSaleRewardAirdrop.address);
+  console.log("    PublicSaleUpgradeableProxy address: ", publicSaleUpgradeableProxy.address);
   console.log("");
 };
 module.exports.tags = ["ropsten"];
@@ -22,9 +24,11 @@ module.exports.dependencies = [
   "ropsten_NYM_deploy",
   "ropsten_GridZoneStakingBot_deploy",
   "ropsten_GenesisSaleRewardAirdrop_deploy",
+  "ropsten_PublicSaleUpgradeable_deploy",
   "ropsten_ProxyAdmin_verify",
   "ropsten_NymLibUpgradeable_verify",
   "ropsten_NYM_verify",
   "ropsten_GridZoneStakingBot_verify",
   "ropsten_GenesisSaleRewardAirdrop_verify",
+  "ropsten_PublicSaleUpgradeable_verify",
 ];

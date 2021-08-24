@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 
@@ -17,7 +18,7 @@ contract BaseNftFactory is Ownable {
     address[] public nfts;
 
     event NewNFT (address indexed nft,
-        string name, string symbol, string metafileUri, uint256 capacity,
+        string name, string symbol, string[] metafileUris, uint256 capacity,
         uint256 price, bool nameChangeable, bool colorChangeable, bytes4[] color);
 
     constructor(address _nymLib, address _priceOracle,
@@ -28,7 +29,7 @@ contract BaseNftFactory is Ownable {
         require(_priceOracle != address(0), "Price oracle address is zero");
         require(_ownerAddress != address(0), "Owner address is invalid");
         require(_proxyAdminAddress != address(0), "Proxy admin address is invalid");
-        require(_impl != address(0), "NFT implementation template address is invalid");
+        require(_impl != address(0), "NFT implementation address is invalid");
         require(_relayerAddress != address(0), "MetaTransaction relayer is invalid");
 
         nymLib = _nymLib;
@@ -39,11 +40,16 @@ contract BaseNftFactory is Ownable {
         relayerAddress = IBiconomyMetaTxRelay(_relayerAddress);
     }
 
+    function setNftImplementation(address _impl) external onlyOwner() {
+        require(_impl != address(0), "NFT implementation address is invalid");
+        impl = _impl;
+    }
+
     /**
      * @notice Create new NFT.
      * @param _name Name of NFT
      * @param _symbol Symbol of NFT
-     * @param _metafileUri URI of information file for the NFT
+     * @param _metafileUris URIs of information files for the NFT
      * @param _capacity Capacity of token, If this value is 0, no limited.
      * @param _price Minting price in ETH
      * @param _nameChangeable Option to changeable name
@@ -53,7 +59,7 @@ contract BaseNftFactory is Ownable {
     function createNFT(
         string memory _name,
         string memory _symbol,
-        string memory _metafileUri,
+        string[] memory _metafileUris,
         uint256 _capacity,
         uint256 _price,
         bool _nameChangeable,
@@ -69,7 +75,7 @@ contract BaseNftFactory is Ownable {
             owner(),
             _name,
             _symbol,
-            _metafileUri,
+            _metafileUris,
             _capacity,
             _price,
             _nameChangeable,
@@ -80,7 +86,7 @@ contract BaseNftFactory is Ownable {
         address nft = newNftProxy(data);
         relayerAddress.allowRelay(nft);
         nfts.push(nft);
-        emit NewNFT(nft, _name, _symbol, _metafileUri, _capacity, _price, _nameChangeable, _colorChangeable, _color);
+        emit NewNFT(nft, _name, _symbol, _metafileUris, _capacity, _price, _nameChangeable, _colorChangeable, _color);
     }
 
     function newNftProxy(bytes memory data) internal virtual returns(address) {

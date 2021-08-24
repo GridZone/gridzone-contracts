@@ -6,13 +6,13 @@ module.exports = async ({ deployments }) => {
 
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
 
-  console.log("Now deploying NymLibUpgradeable on Polygon Mainnet...");
+  console.log("Now deploying NymLibUpgradeable on Mainnet...");
   const impl = await deploy("NymLibUpgradeable", {
     from: deployer.address,
   });
   console.log("NymLibUpgradeable implementation address: ", impl.address);
 
-  console.log("Now deploying NymLibUpgradeableProxy on Polygon Mainnet...");
+  console.log("Now deploying NymLibUpgradeableProxy on Mainnet...");
   const proxy = await deploy("NymLibUpgradeableProxy", {
     from: deployer.address,
     args: [

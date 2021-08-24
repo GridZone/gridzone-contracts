@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.7.6;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
@@ -26,7 +27,7 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
     uint256 private _currentTokenId = 0;
 
     // URI of this token
-    string private _uri;
+    string[] public metafileUris;
 
     // Capacity of token
     uint256 public capacity;
@@ -53,13 +54,13 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
 
     // Admin address to do airdrop
     address private _admin;
-    // The block number of airdrop to the user. only one time airdrop is allowed per user.
-    mapping (address => uint256) public airdropBlockNumber;
+    // The token IDs which is airdropped to the users. only one time airdrop is allowed per user.
+    mapping (address => uint256) public tokenIdsAirdropped;
 
     // Events
-    event NewAdmin(address indexed newAdmin);
+    event NewAdmin (address indexed newAdmin);
     event NewOpenseaProxyRegistry (address indexed proxyRegistryAddress);
-    event NewUri (string newUri);
+    event NewUris (string[] newUris);
     event NewMintPrice (uint256 indexed newMintPrice);
     event Mint (address indexed account, uint256 mintFee, uint256 indexed tokenId, string newName, bytes4[] newColor);
     event Airdrop (address indexed account, uint256 indexed tokenId);
@@ -78,7 +79,7 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
      * @param _ownerAddress Address of owner
      * @param _name Name of NFT
      * @param _symbol Symbol of NFT
-     * @param _metafileUri URI of information file for the NFT
+     * @param _metafileUris URIs of information files for the NFT
      * @param _capacity Capacity of token, If this value is 0, no limited.
      * @param _price Minting price in ETH
      * @param _nameChangeable Option to changeable name
@@ -91,7 +92,7 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
         address _ownerAddress,
         string memory _name,
         string memory _symbol,
-        string memory _metafileUri,
+        string[] memory _metafileUris,
         uint256 _capacity,
         uint256 _price,
         bool _nameChangeable,
@@ -101,12 +102,13 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
         require(_nymLib != address(0), "NYM library address is zero");
         require(_priceOracle != address(0), "Price oracle address is zero");
         require(_ownerAddress != address(0), "Owner address is invalid");
+        require(0 < _metafileUris.length, "Metafiles must be specified at least one");
 
         __Ownable_init(_ownerAddress);
 		__OpenseaERC721_init_unchained(_name, _symbol, address(0));
         nymLib = INymLib(_nymLib);
         priceOracle = IPriceOracleUpgradeable(_priceOracle);
-        _uri = _metafileUri;
+        metafileUris = _metafileUris;
         capacity = (0 < _capacity) ? _capacity : type(uint256).max;
         _mintPrice = _price;
         nameChangeable = _nameChangeable;
@@ -150,13 +152,13 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        // All tokens use the same URI.
-        return _uri;
+        return metafileUris[tokenId.mod(metafileUris.length)];
     }
 
-    function setUri(string memory _metafileUri) external onlyOwner() {
-        _uri = _metafileUri;
-        emit NewUri(_uri);
+    function setUris(string[] memory _metafileUris) external onlyOwner() {
+        require(0 < _metafileUris.length, "Metafiles must be specified at least one");
+        metafileUris = _metafileUris;
+        emit NewUris(metafileUris);
     }
 
     /**
@@ -225,24 +227,23 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
 
         for (uint i = 0; i < _accounts.length; i ++) {
             address account = _accounts[i];
-            require(airdropBlockNumber[account] == 0, "Only one time airdrop is allowed per user");
-            airdropBlockNumber[account] = block.number;
+            require(tokenIdsAirdropped[account] == 0, "Only one time airdrop is allowed per user");
 
             uint tokenId = ++ _currentTokenId;
             _safeMint(account, tokenId);
+            tokenIdsAirdropped[account] = tokenId;
             emit Airdrop(account, tokenId);
         }
     }
 
     function doAirdropBySignature(address _account, bytes memory _signature) external {
-        require(airdropBlockNumber[_account] == 0, "Only one time airdrop is allowed per user");
+        require(tokenIdsAirdropped[_account] == 0, "Only one time airdrop is allowed per user");
         require(totalSupply() < capacity, "Exceeds capacity");
         require(_isValidSignature(_account, _signature), "The specified account is not allowed for airdrop");
 
-        airdropBlockNumber[_account] = block.number;
-
         uint tokenId = ++ _currentTokenId;
         _safeMint(_account, tokenId);
+        tokenIdsAirdropped[_account] = tokenId;
         emit Airdrop(_account, tokenId);
     }
 

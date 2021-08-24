@@ -88,7 +88,7 @@ const getRideContract = (contractAddress, signer) => {
 
 describe('BaseNftUpgradeable', () => {
 
-  const rideUri = "https://ipfs.io/ipfs/Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu";
+  const [rideUri] = "https://ipfs.io/ipfs/Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu";
   const mintPrice = 100;
 
   let owner;
@@ -202,8 +202,8 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be correctly deploy the ride contracts', async () => {
-      await expectRevert(factory.createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]), "revert Ownable: caller is not the owner");
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]);
+      await expectRevert(factory.createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]), "revert Ownable: caller is not the owner");
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]);
 
       expect(await proxyAdmin.getProxyAdmin(factory.nfts(0))).to.equal(proxyAdmin.address); // proxy admin
 
@@ -226,25 +226,25 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should correctly handle the abnormal values while deploying', async () => {
-      await expectRevert(factory.connect(owner).createNFT("", "RIDE0", rideUri, 100, mintPrice, false, false, []), "revert Factory: name is empty");
-      await expectRevert(factory.connect(owner).createNFT("RideNft0", "", rideUri, 100, mintPrice, false, false, []), "revert Factory: symbol is empty");
+      await expectRevert(factory.connect(owner).createNFT("", "RIDE0", [rideUri], 100, mintPrice, false, false, []), "revert Factory: name is empty");
+      await expectRevert(factory.connect(owner).createNFT("RideNft0", "", [rideUri], 100, mintPrice, false, false, []), "revert Factory: symbol is empty");
     });
 
     it('should set the capacity as maximum value when it is input as 0', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 0, mintPrice, false, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 0, mintPrice, false, false, []);
       const rideContract = getRideContract(await factory.nfts(0), a1);
       expect(await rideContract.capacity()).to.equal(UInt256Max());
     });
 
     it('should be able to deploy the multiple ride contracts', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       expect(await rideContract0.nameChangeable()).to.equal(true);
       expect(await rideContract0.colorChangeable()).to.equal(false);
       const defaultColor = await rideContract0.defaultColor();
       expect(defaultColor.length).to.equal(0);
 
-      await factory.connect(owner).createNFT("RideNft1", "RIDE1", rideUri, 100, mintPrice, false, true, []);
+      await factory.connect(owner).createNFT("RideNft1", "RIDE1", [rideUri], 100, mintPrice, false, true, []);
       const rideContract1 = getRideContract(await factory.nfts(1), a1);
       expect(await rideContract1.nameChangeable()).to.equal(false);
       expect(await rideContract1.colorChangeable()).to.equal(true);
@@ -253,23 +253,29 @@ describe('BaseNftUpgradeable', () => {
 
   describe('basic methods', () => {
     it('setOpenseaProxyRegistry method', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       await expectRevert(rideContract0.setOpenseaProxyRegistry(a1.address), "revert Ownable: caller is not the owner");
       await rideContract0.connect(owner).setOpenseaProxyRegistry(a1.address);
       expect(await rideContract0.proxyRegistryAddress()).to.equal(a1.address);
     });
 
-    it('setUri method', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+    it('setUris method', async () => {
+      const uri0 = "https://test_uri0";
+      const uri1 = "https://test_uri1";
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      await expectRevert(rideContract0.setUri("https://test_uri"), "revert Ownable: caller is not the owner");
-      await rideContract0.connect(owner).setUri("https://test_uri");
-      expect(await rideContract0.tokenURI(1)).to.equal("https://test_uri");
+
+      await expectRevert(rideContract0.setUris([uri0]), "revert Ownable: caller is not the owner");
+      await expectRevert(rideContract0.connect(owner).setUris([]), "revert Metafiles must be specified at least one");
+      await rideContract0.connect(owner).setUris([uri0, uri1]);
+      expect(await rideContract0.tokenURI(1)).to.equal(uri1);
+      expect(await rideContract0.tokenURI(2)).to.equal(uri0);
+      expect(await rideContract0.tokenURI(3)).to.equal(uri1);
     });
 
     it('setMintPrice method', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       await expectRevert(rideContract0.setMintPrice(123), "revert Ownable: caller is not the owner");
       await rideContract0.connect(owner).setMintPrice(123);
@@ -280,7 +286,7 @@ describe('BaseNftUpgradeable', () => {
 
   describe('mint', () => {
     it('mint & mintWithParams methods', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       const priceInZone = await rideContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
@@ -324,14 +330,14 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('mintWithParams should be failed when not allowed to change attributes', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       let priceInZone = await rideContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
       await zoneToken.connect(a1).approve(rideContract0.address, priceInZone);
       await expectRevert(rideContract0.mintWithParams("token1", [0x01010101, 0x10101010]), "Nft: disabled to change name");
 
-      await factory.connect(owner).createNFT("RideNft1", "RIDE1", rideUri, 100, mintPrice*2, true, false, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft1", "RIDE1", [rideUri], 100, mintPrice*2, true, false, [0x01234567, 0x89ABCDEF]);
       const rideContract1 = getRideContract(await factory.nfts(1), a1);
       priceInZone = await rideContract1.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
@@ -340,7 +346,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be limited by capacity', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 1, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 1, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       const priceInZone = await rideContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
@@ -352,7 +358,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('withdraw', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       const priceInZone = await rideContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
@@ -373,7 +379,7 @@ describe('BaseNftUpgradeable', () => {
 
   describe('airdrop', () => {
     it('doAirdrop should be failed with incorrect pramaters', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       await expectRevert(rideContract0.doAirdrop([a1.address]), "revert Restricted access to admin");
@@ -449,7 +455,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('doAirdrop should be succeed with correct pramaters', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       await rideContract0.connect(owner).setAdmin(a2.address);
@@ -466,7 +472,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('doAirdropBySignature should be succeed with correct pramaters', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       await rideContract0.connect(owner).setAdmin(a2.address);
 
@@ -485,7 +491,7 @@ describe('BaseNftUpgradeable', () => {
 
   describe('name', () => {
     it('should be failed with incorrect pramaters', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       // mint
@@ -498,7 +504,7 @@ describe('BaseNftUpgradeable', () => {
       await expectRevert(rideContract0.changeName(1, ""), "Nft: new name is same as the current one");
       await expectRevert(rideContract0.changeName(1, " test "), "Nft: invalid name");
 
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, true, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, []);
       const rideContract1 = getRideContract(await factory.nfts(1), a1);
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
       await zoneToken.connect(a1).approve(rideContract1.address, priceInZone);
@@ -507,7 +513,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be correctly changed the name', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, []);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       // mint
@@ -529,7 +535,7 @@ describe('BaseNftUpgradeable', () => {
 
   describe('color', () => {
     it('should be failed with incorrect pramaters', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       // mint
@@ -541,7 +547,7 @@ describe('BaseNftUpgradeable', () => {
       await expectRevert(rideContract0.connect(owner).changeColor(1, []), "Nft: caller is not the token owner");
       await expectRevert(rideContract0.changeColor(1, [0x01010101]), "Nft: color length mismatch");
 
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, false, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, [0x01234567, 0x89ABCDEF]);
       const rideContract1 = getRideContract(await factory.nfts(1), a1);
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
       await zoneToken.connect(a1).approve(rideContract1.address, priceInZone);
@@ -550,7 +556,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be correctly changed the color', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
 
       // mint
@@ -588,7 +594,7 @@ describe('BaseNftUpgradeable', () => {
       await relayContract.executeMetaTransaction(signingKey.address, depositFunctionSignature, r, s, v);
 
       // mint via the relay contract
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       const priceInZone = await rideContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(signingKey).approve(rideContract0.address, priceInZone);
@@ -631,7 +637,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('doAirdropBySignature', async () => {
-      await factory.connect(owner).createNFT("RideNft0", "RIDE0", rideUri, 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
+      await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const rideContract0 = getRideContract(await factory.nfts(0), a1);
       await rideContract0.connect(owner).setAdmin(a2.address);
 
