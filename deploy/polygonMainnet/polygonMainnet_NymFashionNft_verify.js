@@ -16,6 +16,35 @@ module.exports = async () => {
   } catch(e) {
   }
 
+  // const proxyContract = await ethers.getContract("NymFashionNftUpgradeableProxy");
+  // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
+  // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
+  // const data = iface.encodeFunctionData("initialize", [
+  //   nymLibUpgradeableProxy.address,
+  //   priceOracleUpgradeableProxy.address,
+  //   network_.Global.ownerAddress,
+  //   "",
+  //   "",
+  //   [""],
+  //   1,
+  //   "1000000000000000000",
+  //   false,
+  //   false,
+  //   []
+  // ]);
+  // try {
+  //   await run("verify:verify", {
+  //     address: proxyContract.address,
+  //     constructorArguments: [
+  //       impl.address,
+  //       proxyAdmin.address,
+  //       data,
+  //     ],
+  //     contract: "contracts/NFT/NymFashion/NymFashionNftUpgradeableProxy.sol:NymFashionNftUpgradeableProxy",
+  //   });
+  // } catch(e) {
+  // }
+
   const factory = await ethers.getContract("NymFashionNftFactory");
   try {
     await run("verify:verify", {

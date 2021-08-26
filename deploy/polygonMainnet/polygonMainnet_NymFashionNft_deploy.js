@@ -16,6 +16,32 @@ module.exports = async ({ deployments }) => {
   });
   console.log("BaseNftUpgradeable template contract address: ", impl.address);
 
+  // console.log("Now deploying NymFashionNftUpgradeableProxy for just verification on Polygon Mainnet...");
+  // const implArtifact = await deployments.getArtifact("BaseNftUpgradeable");
+  // const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
+  // const data = iface.encodeFunctionData("initialize", [
+  //   nymLibUpgradeableProxy.address,
+  //   priceOracleUpgradeableProxy.address,
+  //   network_.Global.ownerAddress,
+  //   "",
+  //   "",
+  //   [""],
+  //   1,
+  //   "1000000000000000000",
+  //   false,
+  //   false,
+  //   []
+  // ]);
+  // const proxyContract = await deploy("NymFashionNftUpgradeableProxy", {
+  //   from: deployer.address,
+  //   args: [
+  //     impl.address,
+  //     proxyAdmin.address,
+  //     data,
+  //   ],
+  // });
+  // console.log("NymFashionNftUpgradeableProxy template contract address: ", proxyContract.address);
+
   console.log("Now deploying NymFashionNftFactory on Polygon Mainnet...");
   const factory = await deploy("NymFashionNftFactory", {
     from: deployer.address,

@@ -7,4 +7,5 @@ artifacts
 deployments
 
 .env
-
+.env.dev
+.env.prod

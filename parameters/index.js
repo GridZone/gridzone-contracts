@@ -14,8 +14,8 @@ module.exports = {
   },
   ropsten: {
     Global: {
-      ownerAddress: "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
-      proxyAdmin: "",  // TODO: Update after ProxyAdmin deployed
+      ownerAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+      proxyAdmin: "0x55cBA18f08Fe1815a8A39D45f87b1895406d77F9",
     },
     ZONE: {
       tokenAddress: "0x68793924974cC3D1c32A26e7648A84f7f93e3A45",
@@ -28,24 +28,25 @@ module.exports = {
 
   polygonMainnet: {
     Global: {
-      ownerAddress: "0x4879712c5d1a98c0b88fb700daff5c65d12fd729",  // TODO: Update after ZONE token deployed on Polygon Mainnet
-      proxyAdmin: "",  // TODO: Update after ProxyAdmin deployed
+      ownerAddress: "0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c",
+      // ownerAddress: "0x4879712c5d1a98c0b88fb700daff5c65d12fd729",  // TODO: Update after ZONE token deployed on Polygon Mainnet
+      proxyAdmin: "0x0C762a36b46FcCAF1351b4122Eb2CEAF062f6d8B",
     },
     ZONE: {
-      // tokenAddress: "0x5Ab64dAAAa458d8f2019C0a3F2275FDc27e498D1",
-      tokenAddress: "0x3a3Df212b7AA91Aa0402B9035b098891d276572B",  // TODO: Remove after slpZoneEth updated with correct address
+      tokenAddress: "0x5Ab64dAAAa458d8f2019C0a3F2275FDc27e498D1",
+      // tokenAddress: "0x3a3Df212b7AA91Aa0402B9035b098891d276572B",  // TODO: Remove after slpZoneEth updated with correct address
     },
     NymLib: {
-      contractAddress: "",  // TODO: Update after contract deployed
+      contractAddress: "0xEcDE46B0FeD555f7f9E4B685B6722440EEd2D445",
     },
     PriceOracle: {
-      contractAddress: "",  // TODO: Update after contract deployed
-      // slpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after SLP created on SushiSwap
-      slpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Remove after slpZoneEth updated with correct address
+      contractAddress: "0x2B8B8897896ff5c444D247c36022E97315e13e8B",
+      slpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after SLP created on SushiSwap
+      // slpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Remove after slpZoneEth updated with correct address
       slpReserveWeight: 1000, // 10%
       usePoolPrice: false,
-      zoneReserveInSLP: 2000,  // TODO: Update with correct value
-      ethReserveInSLP: 1,  // TODO: Update with correct value
+      zoneReserveInSLP: 3888,
+      ethReserveInSLP: 1,
     },
     BiconomyMetaTxRelay: {
       gasPriceInZone: 1000000000,
