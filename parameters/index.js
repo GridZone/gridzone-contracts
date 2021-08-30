@@ -2,7 +2,7 @@ module.exports = {
   mainnet: {
     Global: {
       ownerAddress: "0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c",
-      proxyAdmin: "",  // TODO: Update after ProxyAdmin deployed
+      proxyAdmin: "0x341B280dE890a46E96961f04d438214c76F1E2d6",
     },
     ZONE: {
       tokenAddress: "0xC1D9B5A0776d7C8B98b8A838e5a0DD1Bc5Fdd53C",

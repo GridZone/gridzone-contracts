@@ -11,7 +11,7 @@ contract PublicSaleUpgradeable is OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
 
-    uint256 public constant genesisSaleEndTime = 1630434706;
+    uint256 public constant genesisSaleEndTime = 1630393200;
     uint256 public constant publicSupply = 1400000e18; // 5%
     uint256 private _publicEthCapacity;
     uint256 private _publicRate;
@@ -38,7 +38,7 @@ contract PublicSaleUpgradeable is OwnableUpgradeable {
 
         __Ownable_init(_ownerAddress);
         zoneToken = IERC20Upgradeable(_zoneToken);
-        _publicEthCapacity = 284e18; // 284 ETH
+        _publicEthCapacity = 300e18; // 300 ETH
         _publicRate = publicSupply.mul(10).div(_publicEthCapacity).div(12); // 2/12 is for bonuses
     }
 
