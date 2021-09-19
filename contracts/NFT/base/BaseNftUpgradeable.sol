@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
 import "../../lib/access/OwnableUpgradeable.sol";
 import "../../lib/opensea/OpenseaERC721Upgradeable.sol";
 import "./IBaseNftUpgradeable.sol";
-import "./IPriceOracleUpgradeable.sol";
+import "../../PriceOracle/IPriceOracleUpgradeable.sol";
 import "../../NYM/INymLib.sol";
 
 /**

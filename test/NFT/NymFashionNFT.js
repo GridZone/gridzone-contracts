@@ -3,9 +3,9 @@ const { ethers, deployments } = require("hardhat");
 const { expectRevert } = require('@openzeppelin/test-helpers');
 const sigUtil = require('eth-sig-util');
 
-const { polygonMainnet: network_ } = require("../../../parameters");
-const ZONE_ABI = require("../../../abis/ZONE_ABI.json");
-const { sendEth, UInt256Max, AddressZero } = require('../../utils/Ethereum');
+const { polygonMainnet: network_ } = require("../../parameters");
+const ZONE_ABI = require("../../abis/ZONE_ABI.json");
+const { sendEth, UInt256Max, AddressZero } = require('../utils/Ethereum');
 
 var decimals = 0;
 const toAmount = (qty) => {
@@ -82,7 +82,7 @@ const getTransactionData = async (domainData, nonce, functionSignature) => {
 }
 
 let implArtifact;
-const getRideContract = (contractAddress, signer) => {
+const getNftContract = (contractAddress, signer) => {
   return new ethers.Contract(contractAddress, implArtifact.abi, signer);
 }
 
@@ -116,7 +116,7 @@ describe('BaseNftUpgradeable', () => {
   beforeEach(async () => {
     await deployments.fixture(["hardhat_polygonMainnet"])
 
-    factory = await ethers.getContract("RideNftFactory");
+    factory = await ethers.getContract("NymFashionNftFactory");
     impl = await ethers.getContract("BaseNftUpgradeable");
     proxyAdmin = await ethers.getContract("ProxyAdmin");
     nymLib = await ethers.getContract("NymLibUpgradeableProxy");
@@ -143,43 +143,30 @@ describe('BaseNftUpgradeable', () => {
     it('should has the correct addresses in', async () => {
       expect(await priceOracle.owner()).to.equal(owner.address);
       expect(await priceOracle.zoneToken()).to.equal(zoneToken.address);
-      expect(await priceOracle.slpZoneEth()).to.equal(network_.PriceOracle.slpZoneEth);
-      expect(await priceOracle.reserveWeight()).to.equal(network_.PriceOracle.slpReserveWeight);
+      expect(await priceOracle.lpZoneEth()).to.equal(network_.PriceOracle.lpZoneEth);
       expect(await priceOracle.usePoolPrice()).to.equal(network_.PriceOracle.usePoolPrice);
-      expect(await priceOracle.zoneReserveInSLP()).to.equal(network_.PriceOracle.zoneReserveInSLP);
-      expect(await priceOracle.ethReserveInSLP()).to.equal(network_.PriceOracle.ethReserveInSLP);
+      expect(await priceOracle.zoneReserveInLP()).to.equal(network_.PriceOracle.zoneReserveInLP);
+      expect(await priceOracle.ethReserveInLP()).to.equal(network_.PriceOracle.ethReserveInLP);
     });
 
     it('should be correctly set', async () => {
       await expectRevert(priceOracle.activatePoolPrice(false, 3000, 2), "revert Ownable: caller is not the owner");
       await priceOracle.connect(owner).activatePoolPrice(false, 3000, 2);
       expect(await priceOracle.usePoolPrice()).to.equal(false);
-      expect(await priceOracle.zoneReserveInSLP()).to.equal(3000);
-      expect(await priceOracle.ethReserveInSLP()).to.equal(2);
+      expect(await priceOracle.zoneReserveInLP()).to.equal(3000);
+      expect(await priceOracle.ethReserveInLP()).to.equal(2);
 
-      await expectRevert(priceOracle.setZoneEthSLP(network_.PriceOracle.slpZoneEth), "revert Ownable: caller is not the owner");
-      await priceOracle.connect(owner).setZoneEthSLP(network_.PriceOracle.slpZoneEth);
-      expect(await priceOracle.slpZoneEth()).to.equal(network_.PriceOracle.slpZoneEth);
-      expect(await priceOracle.zoneReserveInSLP()).to.equal(0);
-      expect(await priceOracle.ethReserveInSLP()).to.equal(0);
+      await expectRevert(priceOracle.setZoneEthLP(network_.PriceOracle.lpZoneEth), "revert Ownable: caller is not the owner");
+      await priceOracle.connect(owner).setZoneEthLP(network_.PriceOracle.lpZoneEth);
+      expect(await priceOracle.lpZoneEth()).to.equal(network_.PriceOracle.lpZoneEth);
+      const ret = await priceOracle.priceAverage();
+      expect(await priceOracle.priceAverage()).to.equal(0);
 
       await priceOracle.connect(owner).activatePoolPrice(true, 3000, 2);
       expect(await priceOracle.usePoolPrice()).to.equal(true);
-      expect(await priceOracle.zoneReserveInSLP()).to.equal(0);
-      expect(await priceOracle.ethReserveInSLP()).to.equal(0);
-
-      await priceOracle.callStatic.mintPriceInZone(100);
-      expect(await priceOracle.zoneReserveInSLP()).to.equal(0);
-      expect(await priceOracle.ethReserveInSLP()).to.equal(0);
 
       await priceOracle.mintPriceInZone(100);
-      expect((await priceOracle.zoneReserveInSLP()).gt(0)).to.equal(true);
-      expect((await priceOracle.ethReserveInSLP()).gt(0)).to.equal(true);
-
-      await expectRevert(priceOracle.setSLPReserveWeight(10001), "revert Ownable: caller is not the owner");
-      await expectRevert(priceOracle.connect(owner).setSLPReserveWeight(10001), "The weight should be less than 10000");
-      await priceOracle.connect(owner).setSLPReserveWeight(10000);
-      expect(await priceOracle.reserveWeight()).to.equal(10000);
+      expect((await priceOracle.priceAverage()).gt(0)).to.equal(true);
     });
 
     it('should return the correct price', async () => {
@@ -192,7 +179,7 @@ describe('BaseNftUpgradeable', () => {
     });
   });
 
-  describe('RideNftFactory', () => {
+  describe('NftFactory', () => {
     it('should has the correct addresses in', async () => {
       expect(await factory.owner()).to.equal(owner.address);
       expect(await factory.nymLib()).to.equal(nymLib.address);
@@ -207,19 +194,19 @@ describe('BaseNftUpgradeable', () => {
 
       expect(await proxyAdmin.getProxyAdmin(factory.nfts(0))).to.equal(proxyAdmin.address); // proxy admin
 
-      const rideContract = getRideContract(await factory.nfts(0), a1);
-      expect(await rideContract.owner()).to.equal(owner.address);
-      expect(await rideContract.admin()).to.equal(owner.address);
-      expect(await rideContract.nymLib()).to.equal(nymLib.address);
-      expect(await rideContract.priceOracle()).to.equal(priceOracle.address);
-      expect(await rideContract.tokenURI(0)).to.equal(rideUri);
-      expect(await rideContract.capacity()).to.equal(100);
-      expect(await rideContract.mintPrice()).to.equal(mintPrice);
-      expect(await rideContract.zoneToken()).to.equal(zoneToken.address);
-      expect(await rideContract.nameChangeable()).to.equal(false);
-      expect(await rideContract.colorChangeable()).to.equal(false);
-      expect(await rideContract.proxyRegistryAddress()).to.equal(AddressZero());
-      const defaultColor = await rideContract.defaultColor();
+      const nftContract = getNftContract(await factory.nfts(0), a1);
+      expect(await nftContract.owner()).to.equal(owner.address);
+      expect(await nftContract.admin()).to.equal(owner.address);
+      expect(await nftContract.nymLib()).to.equal(nymLib.address);
+      expect(await nftContract.priceOracle()).to.equal(priceOracle.address);
+      expect(await nftContract.tokenURI(0)).to.equal(rideUri);
+      expect(await nftContract.capacity()).to.equal(100);
+      expect(await nftContract.mintPrice()).to.equal(mintPrice);
+      expect(await nftContract.zoneToken()).to.equal(zoneToken.address);
+      expect(await nftContract.nameChangeable()).to.equal(false);
+      expect(await nftContract.colorChangeable()).to.equal(false);
+      expect(await nftContract.proxyRegistryAddress()).to.equal(AddressZero());
+      const defaultColor = await nftContract.defaultColor();
       expect(defaultColor.length).to.equal(2);
       expect(parseInt(defaultColor[0]) === 0x01234567).to.equal(true);
       expect(parseInt(defaultColor[1]) === 0x89ABCDEF).to.equal(true);
@@ -232,147 +219,147 @@ describe('BaseNftUpgradeable', () => {
 
     it('should set the capacity as maximum value when it is input as 0', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 0, mintPrice, false, false, []);
-      const rideContract = getRideContract(await factory.nfts(0), a1);
-      expect(await rideContract.capacity()).to.equal(UInt256Max());
+      const nftContract = getNftContract(await factory.nfts(0), a1);
+      expect(await nftContract.capacity()).to.equal(UInt256Max());
     });
 
     it('should be able to deploy the multiple ride contracts', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      expect(await rideContract0.nameChangeable()).to.equal(true);
-      expect(await rideContract0.colorChangeable()).to.equal(false);
-      const defaultColor = await rideContract0.defaultColor();
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      expect(await nftContract0.nameChangeable()).to.equal(true);
+      expect(await nftContract0.colorChangeable()).to.equal(false);
+      const defaultColor = await nftContract0.defaultColor();
       expect(defaultColor.length).to.equal(0);
 
       await factory.connect(owner).createNFT("RideNft1", "RIDE1", [rideUri], 100, mintPrice, false, true, []);
-      const rideContract1 = getRideContract(await factory.nfts(1), a1);
-      expect(await rideContract1.nameChangeable()).to.equal(false);
-      expect(await rideContract1.colorChangeable()).to.equal(true);
+      const nftContract1 = getNftContract(await factory.nfts(1), a1);
+      expect(await nftContract1.nameChangeable()).to.equal(false);
+      expect(await nftContract1.colorChangeable()).to.equal(true);
     });
   });
 
   describe('basic methods', () => {
     it('setOpenseaProxyRegistry method', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      await expectRevert(rideContract0.setOpenseaProxyRegistry(a1.address), "revert Ownable: caller is not the owner");
-      await rideContract0.connect(owner).setOpenseaProxyRegistry(a1.address);
-      expect(await rideContract0.proxyRegistryAddress()).to.equal(a1.address);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      await expectRevert(nftContract0.setOpenseaProxyRegistry(a1.address), "revert Ownable: caller is not the owner");
+      await nftContract0.connect(owner).setOpenseaProxyRegistry(a1.address);
+      expect(await nftContract0.proxyRegistryAddress()).to.equal(a1.address);
     });
 
     it('setUris method', async () => {
       const uri0 = "https://test_uri0";
       const uri1 = "https://test_uri1";
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
-      await expectRevert(rideContract0.setUris([uri0]), "revert Ownable: caller is not the owner");
-      await expectRevert(rideContract0.connect(owner).setUris([]), "revert Metafiles must be specified at least one");
-      await rideContract0.connect(owner).setUris([uri0, uri1]);
-      expect(await rideContract0.tokenURI(1)).to.equal(uri1);
-      expect(await rideContract0.tokenURI(2)).to.equal(uri0);
-      expect(await rideContract0.tokenURI(3)).to.equal(uri1);
+      await expectRevert(nftContract0.setUris([uri0]), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.connect(owner).setUris([]), "revert Metafiles must be specified at least one");
+      await nftContract0.connect(owner).setUris([uri0, uri1]);
+      expect(await nftContract0.tokenURI(1)).to.equal(uri1);
+      expect(await nftContract0.tokenURI(2)).to.equal(uri0);
+      expect(await nftContract0.tokenURI(3)).to.equal(uri1);
     });
 
     it('setMintPrice method', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      await expectRevert(rideContract0.setMintPrice(123), "revert Ownable: caller is not the owner");
-      await rideContract0.connect(owner).setMintPrice(123);
-      expect(await rideContract0.mintPrice()).to.equal(123);
-      expect((await rideContract0.callStatic.mintPriceInZone()).toNumber()).to.greaterThan(0);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      await expectRevert(nftContract0.setMintPrice(123), "revert Ownable: caller is not the owner");
+      await nftContract0.connect(owner).setMintPrice(123);
+      expect(await nftContract0.mintPrice()).to.equal(123);
+      expect((await nftContract0.callStatic.mintPriceInZone()).toNumber()).to.greaterThan(0);
     });
   });
 
   describe('mint', () => {
     it('mint & mintWithParams methods', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone.mul(2));
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone.mul(2));
 
       // mint
       let tokenId = 1;
-      await rideContract0.mint();
-      expect(await zoneToken.balanceOf(rideContract0.address)).to.equal(priceInZone);
-      expect(await rideContract0.balanceOf(a1.address)).to.equal(1);
-      expect(await rideContract0.ownerOf(tokenId)).to.equal(a1.address);
-      expect(await rideContract0.totalSupply()).to.equal(1);
-      expect(await rideContract0.tokenByIndex(0)).to.equal(1);
-      expect(await rideContract0.tokenOfOwnerByIndex(a1.address, 0)).to.equal(1);
+      await nftContract0.mint();
+      expect(await zoneToken.balanceOf(nftContract0.address)).to.equal(priceInZone);
+      expect(await nftContract0.balanceOf(a1.address)).to.equal(1);
+      expect(await nftContract0.ownerOf(tokenId)).to.equal(a1.address);
+      expect(await nftContract0.totalSupply()).to.equal(1);
+      expect(await nftContract0.tokenByIndex(0)).to.equal(1);
+      expect(await nftContract0.tokenOfOwnerByIndex(a1.address, 0)).to.equal(1);
 
       // The color should be same with the default color
-      let color = await rideContract0.tokenColorById(tokenId);
+      let color = await nftContract0.tokenColorById(tokenId);
       expect(color.length).to.equal(2);
       expect(parseInt(color[0]) === 0x01234567).to.equal(true);
       expect(parseInt(color[1]) === 0x89ABCDEF).to.equal(true);
       // The name should be zero length
-      expect(await rideContract0.tokenNameById(tokenId)).to.equal("");
+      expect(await nftContract0.tokenNameById(tokenId)).to.equal("");
 
       // mintWithParams
       tokenId = 2;
-      await rideContract0.mintWithParams("token1", [0x01010101, 0x10101010]);
-      expect(await zoneToken.balanceOf(rideContract0.address)).to.equal(priceInZone.mul(2));
-      expect(await rideContract0.balanceOf(a1.address)).to.equal(2);
-      expect(await rideContract0.ownerOf(tokenId)).to.equal(a1.address);
-      expect(await rideContract0.totalSupply()).to.equal(2);
-      expect(await rideContract0.tokenByIndex(1)).to.equal(2);
-      expect(await rideContract0.tokenOfOwnerByIndex(a1.address, 1)).to.equal(2);
+      await nftContract0.mintWithParams("token1", [0x01010101, 0x10101010]);
+      expect(await zoneToken.balanceOf(nftContract0.address)).to.equal(priceInZone.mul(2));
+      expect(await nftContract0.balanceOf(a1.address)).to.equal(2);
+      expect(await nftContract0.ownerOf(tokenId)).to.equal(a1.address);
+      expect(await nftContract0.totalSupply()).to.equal(2);
+      expect(await nftContract0.tokenByIndex(1)).to.equal(2);
+      expect(await nftContract0.tokenOfOwnerByIndex(a1.address, 1)).to.equal(2);
 
       // The color should be same with the input color
-      color = await rideContract0.tokenColorById(tokenId);
+      color = await nftContract0.tokenColorById(tokenId);
       expect(color.length).to.equal(2);
       expect(parseInt(color[0]) === 0x01010101).to.equal(true);
       expect(parseInt(color[1]) === 0x10101010).to.equal(true);
       // The name should be zero length
-      expect(await rideContract0.tokenNameById(tokenId)).to.equal("token1");
+      expect(await nftContract0.tokenNameById(tokenId)).to.equal("token1");
     });
 
     it('mintWithParams should be failed when not allowed to change attributes', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      let priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      let priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone);
-      await expectRevert(rideContract0.mintWithParams("token1", [0x01010101, 0x10101010]), "Nft: disabled to change name");
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone);
+      await expectRevert(nftContract0.mintWithParams("token1", [0x01010101, 0x10101010]), "Nft: disabled to change name");
 
       await factory.connect(owner).createNFT("RideNft1", "RIDE1", [rideUri], 100, mintPrice*2, true, false, [0x01234567, 0x89ABCDEF]);
-      const rideContract1 = getRideContract(await factory.nfts(1), a1);
-      priceInZone = await rideContract1.callStatic.mintPriceInZone();
+      const nftContract1 = getNftContract(await factory.nfts(1), a1);
+      priceInZone = await nftContract1.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract1.address, priceInZone);
-      await expectRevert(rideContract1.mintWithParams("token1", [0x01010101, 0x10101010]), "Nft: disabled to change color");
+      await zoneToken.connect(a1).approve(nftContract1.address, priceInZone);
+      await expectRevert(nftContract1.mintWithParams("token1", [0x01010101, 0x10101010]), "Nft: disabled to change color");
     });
 
     it('should be limited by capacity', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 1, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone.mul(2));
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone.mul(2));
 
       // mint
-      await rideContract0.mint();
-      await expectRevert(rideContract0.mint(), "Exceeds capacity");
+      await nftContract0.mint();
+      await expectRevert(nftContract0.mint(), "Exceeds capacity");
     });
 
     it('withdraw', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone.mul(2));
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone.mul(2));
 
       // mint
-      await rideContract0.mint();
-      await rideContract0.mint();
-      expect(await zoneToken.balanceOf(rideContract0.address)).to.equal(priceInZone.mul(2));
+      await nftContract0.mint();
+      await nftContract0.mint();
+      expect(await zoneToken.balanceOf(nftContract0.address)).to.equal(priceInZone.mul(2));
 
       // withdraw
-      await expectRevert(rideContract0.withdraw(), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.withdraw(), "revert Ownable: caller is not the owner");
       const ownerBalance = await zoneToken.balanceOf(owner.address);
-      await rideContract0.connect(owner).withdraw();
+      await nftContract0.connect(owner).withdraw();
       expect(await zoneToken.balanceOf(owner.address)).to.equal(ownerBalance.add(priceInZone.mul(2)));
     });
   });
@@ -380,14 +367,14 @@ describe('BaseNftUpgradeable', () => {
   describe('airdrop', () => {
     it('doAirdrop should be failed with incorrect pramaters', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
-      await expectRevert(rideContract0.doAirdrop([a1.address]), "revert Restricted access to admin");
-      await expectRevert(rideContract0.setAdmin(a2.address), "revert Ownable: caller is not the owner");
-      await rideContract0.connect(owner).setAdmin(a2.address);
+      await expectRevert(nftContract0.doAirdrop([a1.address]), "revert Restricted access to admin");
+      await expectRevert(nftContract0.setAdmin(a2.address), "revert Ownable: caller is not the owner");
+      await nftContract0.connect(owner).setAdmin(a2.address);
 
-      await expectRevert(rideContract0.connect(a2).doAirdrop([]), "Nft: No account address");
-      await expectRevert(rideContract0.connect(a2).doAirdrop([
+      await expectRevert(nftContract0.connect(a2).doAirdrop([]), "Nft: No account address");
+      await expectRevert(nftContract0.connect(a2).doAirdrop([
         "0xa23cff7a4f319445e4584897941bf478b4931abc",
         "0x2e811568b0fb4b6e9077c4cd2d57c34f554b835d",
         "0x5dce3cf1bbdd8fee714cf7ec1f00b817cbcf2160",
@@ -420,7 +407,7 @@ describe('BaseNftUpgradeable', () => {
         "0xad25daf8b180d846c78fe7b4aabd83f881d6b733",
         "0x9f7ae94f69d27bc1e8f895f21d8c13cdcbe3bdf0",
       ]), "Exceeds limit");
-      await expectRevert(rideContract0.connect(a2).doAirdrop([
+      await expectRevert(nftContract0.connect(a2).doAirdrop([
         "0xa23cff7a4f319445e4584897941bf478b4931abc",
         "0x2e811568b0fb4b6e9077c4cd2d57c34f554b835d",
         "0x5dce3cf1bbdd8fee714cf7ec1f00b817cbcf2160",
@@ -456,126 +443,126 @@ describe('BaseNftUpgradeable', () => {
 
     it('doAirdrop should be succeed with correct pramaters', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
-      await rideContract0.connect(owner).setAdmin(a2.address);
-      await rideContract0.connect(a2).doAirdrop([
+      await nftContract0.connect(owner).setAdmin(a2.address);
+      await nftContract0.connect(a2).doAirdrop([
         accounts[0].address,
         accounts[1].address,
         accounts[2].address,
       ]);
-      expect(await rideContract0.totalSupply()).to.equal(3);
-      expect(await rideContract0.ownerOf(1)).to.equal(accounts[0].address);
-      expect(await rideContract0.ownerOf(2)).to.equal(accounts[1].address);
-      expect(await rideContract0.ownerOf(3)).to.equal(accounts[2].address);
-      await expectRevert(rideContract0.connect(a2).doAirdrop([accounts[0].address]), "Only one time airdrop is allowed per user");
+      expect(await nftContract0.totalSupply()).to.equal(3);
+      expect(await nftContract0.ownerOf(1)).to.equal(accounts[0].address);
+      expect(await nftContract0.ownerOf(2)).to.equal(accounts[1].address);
+      expect(await nftContract0.ownerOf(3)).to.equal(accounts[2].address);
+      await expectRevert(nftContract0.connect(a2).doAirdrop([accounts[0].address]), "Only one time airdrop is allowed per user");
     });
 
     it('doAirdropBySignature should be succeed with correct pramaters', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      await rideContract0.connect(owner).setAdmin(a2.address);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      await nftContract0.connect(owner).setAdmin(a2.address);
 
       const message = ethers.utils.solidityKeccak256(
         ["address", "address"],
-        [rideContract0.address, accounts[0].address]
+        [nftContract0.address, accounts[0].address]
       );
       const signature = await a2.signMessage(ethers.utils.arrayify(message));
 
-      await rideContract0.doAirdropBySignature(accounts[0].address, signature);
-      expect(await rideContract0.totalSupply()).to.equal(1);
-      expect(await rideContract0.ownerOf(1)).to.equal(accounts[0].address);
-      await expectRevert(rideContract0.doAirdropBySignature(accounts[0].address, signature), "Only one time airdrop is allowed per user");
+      await nftContract0.doAirdropBySignature(accounts[0].address, signature);
+      expect(await nftContract0.totalSupply()).to.equal(1);
+      expect(await nftContract0.ownerOf(1)).to.equal(accounts[0].address);
+      await expectRevert(nftContract0.doAirdropBySignature(accounts[0].address, signature), "Only one time airdrop is allowed per user");
     });
   });
 
   describe('name', () => {
     it('should be failed with incorrect pramaters', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
       // mint
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone);
-      await rideContract0.mint();
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone);
+      await nftContract0.mint();
 
-      await expectRevert(rideContract0.connect(owner).changeName(1, "token1"), "Nft: caller is not the token owner");
-      await expectRevert(rideContract0.changeName(1, ""), "Nft: new name is same as the current one");
-      await expectRevert(rideContract0.changeName(1, " test "), "Nft: invalid name");
+      await expectRevert(nftContract0.connect(owner).changeName(1, "token1"), "Nft: caller is not the token owner");
+      await expectRevert(nftContract0.changeName(1, ""), "Nft: new name is same as the current one");
+      await expectRevert(nftContract0.changeName(1, " test "), "Nft: invalid name");
 
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, []);
-      const rideContract1 = getRideContract(await factory.nfts(1), a1);
+      const nftContract1 = getNftContract(await factory.nfts(1), a1);
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract1.address, priceInZone);
-      await rideContract1.mint();
-      await expectRevert(rideContract1.changeName(1, "tocken1"), "Nft: disabled to change name");
+      await zoneToken.connect(a1).approve(nftContract1.address, priceInZone);
+      await nftContract1.mint();
+      await expectRevert(nftContract1.changeName(1, "tocken1"), "Nft: disabled to change name");
     });
 
     it('should be correctly changed the name', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
       // mint
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone.mul(2));
-      await rideContract0.mint();
-      await rideContract0.mint();
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone.mul(2));
+      await nftContract0.mint();
+      await nftContract0.mint();
 
       // change name
-      await rideContract0.connect(a1).changeName(2, "token1");
-      expect(await rideContract0.tokenNameById(2)).to.equal("token1");
+      await nftContract0.connect(a1).changeName(2, "token1");
+      expect(await nftContract0.tokenNameById(2)).to.equal("token1");
 
       // should be failed to change with the duplicated name
-      expect(await rideContract0.tokenNameById(1)).to.equal("");
-      await expectRevert(rideContract0.changeName(1, "token1"), "Nft: name already reserved");
+      expect(await nftContract0.tokenNameById(1)).to.equal("");
+      await expectRevert(nftContract0.changeName(1, "token1"), "Nft: name already reserved");
     });
   });
 
   describe('color', () => {
     it('should be failed with incorrect pramaters', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
       // mint
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone);
-      await rideContract0.mint();
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone);
+      await nftContract0.mint();
 
-      await expectRevert(rideContract0.connect(owner).changeColor(1, []), "Nft: caller is not the token owner");
-      await expectRevert(rideContract0.changeColor(1, [0x01010101]), "Nft: color length mismatch");
+      await expectRevert(nftContract0.connect(owner).changeColor(1, []), "Nft: caller is not the token owner");
+      await expectRevert(nftContract0.changeColor(1, [0x01010101]), "Nft: color length mismatch");
 
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, [0x01234567, 0x89ABCDEF]);
-      const rideContract1 = getRideContract(await factory.nfts(1), a1);
+      const nftContract1 = getNftContract(await factory.nfts(1), a1);
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
-      await zoneToken.connect(a1).approve(rideContract1.address, priceInZone);
-      await rideContract1.mint();
-      await expectRevert(rideContract1.changeColor(1, []), "Nft: disabled to change color");
+      await zoneToken.connect(a1).approve(nftContract1.address, priceInZone);
+      await nftContract1.mint();
+      await expectRevert(nftContract1.changeColor(1, []), "Nft: disabled to change color");
     });
 
     it('should be correctly changed the color', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
       // mint
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
       await zoneToken.connect(owner).transfer(a1.address, priceInZone.mul(2));
-      await zoneToken.connect(a1).approve(rideContract0.address, priceInZone.mul(2));
-      await rideContract0.mint();
-      await rideContract0.mint();
+      await zoneToken.connect(a1).approve(nftContract0.address, priceInZone.mul(2));
+      await nftContract0.mint();
+      await nftContract0.mint();
 
       // change name
-      await rideContract0.connect(a1).changeColor(1, [0x01010101, 0x10101010]);
-      let color = await rideContract0.tokenColorById(1);
+      await nftContract0.connect(a1).changeColor(1, [0x01010101, 0x10101010]);
+      let color = await nftContract0.tokenColorById(1);
       expect(color.length).to.equal(2);
       expect(parseInt(color[0]) === 0x01010101).to.equal(true);
       expect(parseInt(color[1]) === 0x10101010).to.equal(true);
 
       // reset to the default color
-      await rideContract0.connect(a1).changeColor(1, []);
-      color = await rideContract0.tokenColorById(1);
+      await nftContract0.connect(a1).changeColor(1, []);
+      color = await nftContract0.tokenColorById(1);
       expect(color.length).to.equal(2);
       expect(parseInt(color[0]) === 0x01234567).to.equal(true);
       expect(parseInt(color[1]) === 0x89ABCDEF).to.equal(true);
@@ -595,72 +582,72 @@ describe('BaseNftUpgradeable', () => {
 
       // mint via the relay contract
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      const priceInZone = await rideContract0.callStatic.mintPriceInZone();
-      await zoneToken.connect(signingKey).approve(rideContract0.address, priceInZone);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      const priceInZone = await nftContract0.callStatic.mintPriceInZone();
+      await zoneToken.connect(signingKey).approve(nftContract0.address, priceInZone);
 
       const domainData = {
-        name: await rideContract0.name(),
+        name: await nftContract0.name(),
         version: "1",
-        verifyingContract: rideContract0.address,
+        verifyingContract: nftContract0.address,
         salt: chainIdSalt,
       };
-      nonce = await rideContract0.getNonce(signingKey.address);
-      const mintFunctionSignature = rideContract0.interface.encodeFunctionData("mintWithParams", ["token1", [0x01010101, 0x10101010]]);
+      nonce = await nftContract0.getNonce(signingKey.address);
+      const mintFunctionSignature = nftContract0.interface.encodeFunctionData("mintWithParams", ["token1", [0x01010101, 0x10101010]]);
       let { r:r1, s:s1, v:v1 } = await getTransactionData(domainData, nonce, mintFunctionSignature);
 
       await relayContract.connect(owner).setBiconomyForwarder(a1.address);
-      // await expectRevert(relayContract.connect(a1).relayMetaTransaction(signingKey.address, rideContract0.address, mintFunctionSignature, r1, s1, v1), "Relay: The contract is not allowed");
-      // await relayContract.connect(owner).grantRole(await relayContract.ALLOWED_CONTRACTS(), rideContract0.address);
-      await relayContract.connect(a1).relayMetaTransaction(signingKey.address, rideContract0.address, mintFunctionSignature, r1, s1, v1);
+      // await expectRevert(relayContract.connect(a1).relayMetaTransaction(signingKey.address, nftContract0.address, mintFunctionSignature, r1, s1, v1), "Relay: The contract is not allowed");
+      // await relayContract.connect(owner).grantRole(await relayContract.ALLOWED_CONTRACTS(), nftContract0.address);
+      await relayContract.connect(a1).relayMetaTransaction(signingKey.address, nftContract0.address, mintFunctionSignature, r1, s1, v1);
 
-      expect(await rideContract0.getNonce(signingKey.address)).to.equal(parseInt(nonce) + 1);
+      expect(await nftContract0.getNonce(signingKey.address)).to.equal(parseInt(nonce) + 1);
       const balance = await relayContract.balanceOf(signingKey.address);
       const fee = await relayContract.balanceOf(owner.address);
       expect(fee).to.gte(0);
       expect(balance.add(fee)).to.equal(toAmount(500));
 
-      expect(await zoneToken.balanceOf(rideContract0.address)).to.equal(priceInZone);
-      expect(await rideContract0.balanceOf(signingKey.address)).to.equal(1);
-      expect(await rideContract0.ownerOf(1)).to.equal(signingKey.address);
-      expect(await rideContract0.totalSupply()).to.equal(1);
-      expect(await rideContract0.tokenByIndex(0)).to.equal(1);
-      expect(await rideContract0.tokenOfOwnerByIndex(signingKey.address, 0)).to.equal(1);
+      expect(await zoneToken.balanceOf(nftContract0.address)).to.equal(priceInZone);
+      expect(await nftContract0.balanceOf(signingKey.address)).to.equal(1);
+      expect(await nftContract0.ownerOf(1)).to.equal(signingKey.address);
+      expect(await nftContract0.totalSupply()).to.equal(1);
+      expect(await nftContract0.tokenByIndex(0)).to.equal(1);
+      expect(await nftContract0.tokenOfOwnerByIndex(signingKey.address, 0)).to.equal(1);
 
       // The color should be same with the input color
-      color = await rideContract0.tokenColorById(1);
+      color = await nftContract0.tokenColorById(1);
       expect(color.length).to.equal(2);
       expect(parseInt(color[0]) === 0x01010101).to.equal(true);
       expect(parseInt(color[1]) === 0x10101010).to.equal(true);
       // The name should be zero length
-      expect(await rideContract0.tokenNameById(1)).to.equal("token1");
+      expect(await nftContract0.tokenNameById(1)).to.equal("token1");
     });
 
     it('doAirdropBySignature', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
-      const rideContract0 = getRideContract(await factory.nfts(0), a1);
-      await rideContract0.connect(owner).setAdmin(a2.address);
+      const nftContract0 = getNftContract(await factory.nfts(0), a1);
+      await nftContract0.connect(owner).setAdmin(a2.address);
 
       const message = ethers.utils.solidityKeccak256(
         ["address", "address"],
-        [rideContract0.address, accounts[0].address]
+        [nftContract0.address, accounts[0].address]
       );
       const signature = await a2.signMessage(ethers.utils.arrayify(message));
 
       const domainData = {
-        name: await rideContract0.name(),
+        name: await nftContract0.name(),
         version: "1",
-        verifyingContract: rideContract0.address,
+        verifyingContract: nftContract0.address,
         salt: chainIdSalt,
       };
-      nonce = await rideContract0.getNonce(signingKey.address);
-      const functionSignature = rideContract0.interface.encodeFunctionData("doAirdropBySignature", [accounts[0].address, signature]);
+      nonce = await nftContract0.getNonce(signingKey.address);
+      const functionSignature = nftContract0.interface.encodeFunctionData("doAirdropBySignature", [accounts[0].address, signature]);
       let { r, s, v } = await getTransactionData(domainData, nonce, functionSignature);
-      await rideContract0.executeMetaTransaction(signingKey.address, functionSignature, r, s, v);
+      await nftContract0.executeMetaTransaction(signingKey.address, functionSignature, r, s, v);
 
-      expect(await rideContract0.totalSupply()).to.equal(1);
-      expect(await rideContract0.ownerOf(1)).to.equal(accounts[0].address);
-      await expectRevert(rideContract0.doAirdropBySignature(accounts[0].address, signature), "Only one time airdrop is allowed per user");
+      expect(await nftContract0.totalSupply()).to.equal(1);
+      expect(await nftContract0.ownerOf(1)).to.equal(accounts[0].address);
+      await expectRevert(nftContract0.doAirdropBySignature(accounts[0].address, signature), "Only one time airdrop is allowed per user");
     });
   });
 });

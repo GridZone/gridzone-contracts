@@ -1,4 +1,12 @@
+const { ethers } = require("hardhat");
+const { BigNumber, utils } = ethers;
+const parseEther = utils.parseEther;
+
+const GAS_PRICE_GWEI = 60;
+
 module.exports = {
+  gasPrice: (typeof GAS_PRICE_GWEI !== 'undefined') ? BigNumber.from(10).pow(9).mul(GAS_PRICE_GWEI) : undefined,
+
   mainnet: {
     Global: {
       ownerAddress: "0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c",
@@ -8,21 +16,42 @@ module.exports = {
       tokenAddress: "0xC1D9B5A0776d7C8B98b8A838e5a0DD1Bc5Fdd53C",
       vaultAddress: "0x7205731e9643235Aa313D46552c7aa81E559fB6F",
     },
+    NymLib: {
+      contractAddress: "",
+    },
+    PriceOracle: {
+      contractAddress: "",
+      lpZoneEth: "0x95332661B2e36a02dC05E6fb7c31193f0690C90F", // Uniswap V2 ZONE/ETH
+      usePoolPrice: true,
+      zoneReserveInLP: 3888,
+      ethReserveInLP: 1,
+    },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",  // TODO: Update with correct address
     },
   },
-  ropsten: {
+
+  goerli: {
     Global: {
       ownerAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
-      proxyAdmin: "0x55cBA18f08Fe1815a8A39D45f87b1895406d77F9",
+      proxyAdmin: "0x7bC3487097F6495D3d0d2944Df80B161612293a9",
     },
     ZONE: {
-      tokenAddress: "0x68793924974cC3D1c32A26e7648A84f7f93e3A45",
+      tokenAddress: "0x862E80fFDDB68230CFc9850e767260A9595C93Eb",
       vaultAddress: "0x6CdeD499E788eC7be89E4A4aC183065B1f38Cb16",
     },
+    NymLib: {
+      contractAddress: "0x06454E306DBCB79C7C139d5e8977ac455f812f52",
+    },
+    PriceOracle: {
+      contractAddress: "0x9A1f400FA839C48B29C335A06fC324670D0e7d86",
+      lpZoneEth: "0xbeBA86D9718276c545cA45A25BF10A370DBA3A86", // Uniswap V2 ZONE/ETH
+      usePoolPrice: true,
+      zoneReserveInLP: 3888,
+      ethReserveInLP: 1,
+    },
     GenesisSaleRewardAirdrop: {
-      adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",
+      adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
     },
   },
 
@@ -34,25 +63,25 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0x5Ab64dAAAa458d8f2019C0a3F2275FDc27e498D1",
-      // tokenAddress: "0x3a3Df212b7AA91Aa0402B9035b098891d276572B",  // TODO: Remove after slpZoneEth updated with correct address
+      // tokenAddress: "0x3a3Df212b7AA91Aa0402B9035b098891d276572B",  // TODO: Remove after lpZoneEth updated with correct address
     },
     NymLib: {
       contractAddress: "0xEcDE46B0FeD555f7f9E4B685B6722440EEd2D445",
     },
     PriceOracle: {
-      contractAddress: "0x2B8B8897896ff5c444D247c36022E97315e13e8B",
-      slpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after SLP created on SushiSwap
-      // slpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Remove after slpZoneEth updated with correct address
-      slpReserveWeight: 1000, // 10%
+      contractAddress: "0x2B8B8897896ff5c444D247c36022E97315e13e8B", // TODO: It should be redeployed for new NFTs
+      lpZoneEth: "0x0000000000000000000000000000000000000000",  // TODO: Update after SLP created on SushiSwap
+      // lpZoneEth: "0xcBF6f78981e63Ef813cb71852d72A060b583EECF",  // TODO: Remove after lpZoneEth updated with correct address
       usePoolPrice: false,
-      zoneReserveInSLP: 3888,
-      ethReserveInSLP: 1,
+      zoneReserveInLP: 3888,
+      ethReserveInLP: 1,
     },
     BiconomyMetaTxRelay: {
       gasPriceInZone: 1000000000,
       biconomyForwarder: "0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8",
     },
   },
+
   polygonMumbai: {
     Global: {
       ownerAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
@@ -68,11 +97,10 @@ module.exports = {
     },
     PriceOracle: {
       contractAddress: "0x684F0baaF8910Bfc098AE8D02A3959F50B44aE27",
-      slpZoneEth: "0x5B45C620B4316B9316542C65B0680d4E621E9CCF",
-      slpReserveWeight: 1000, // 10%
+      lpZoneEth: "0x5B45C620B4316B9316542C65B0680d4E621E9CCF",
       usePoolPrice: false,
-      zoneReserveInSLP: 2000,
-      ethReserveInSLP: 1,
+      zoneReserveInLP: 2000,
+      ethReserveInLP: 1,
     },
     BiconomyMetaTxRelay: {
       gasPriceInZone: 1000000000,

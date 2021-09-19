@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async ({ deployments }) => {
   const { deploy } = deployments;
@@ -7,7 +7,7 @@ module.exports = async ({ deployments }) => {
 
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
 
-  console.log("Now deploying PublicSaleUpgradeable on Ropsten...");
+  console.log("Now deploying PublicSaleUpgradeable on Goerli...");
   const impl = await deploy("PublicSaleUpgradeable", {
     from: deployer.address,
   });
@@ -20,7 +20,7 @@ module.exports = async ({ deployments }) => {
     network_.ZONE.tokenAddress,
   ]);
 
-  console.log("Now deploying PublicSaleUpgradeableProxy on Ropsten...");
+  console.log("Now deploying PublicSaleUpgradeableProxy on Goerli...");
   const proxy = await deploy("PublicSaleUpgradeableProxy", {
     from: deployer.address,
     args: [
@@ -31,4 +31,4 @@ module.exports = async ({ deployments }) => {
   });
   console.log("PublicSaleUpgradeableProxy proxy address: ", proxy.address);
 };
-module.exports.tags = ["ropsten_PublicSaleUpgradeable_deploy"];
+module.exports.tags = ["goerli_PublicSaleUpgradeable_deploy"];

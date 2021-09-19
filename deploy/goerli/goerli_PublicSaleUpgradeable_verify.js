@@ -1,5 +1,5 @@
 const { ethers, run } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async () => {
   const proxyAdmin = await ethers.getContract("ProxyAdmin");
@@ -34,4 +34,4 @@ module.exports = async () => {
   } catch (e) {
   }
 };
-module.exports.tags = ["ropsten_PublicSaleUpgradeable_verify"];
+module.exports.tags = ["goerli_PublicSaleUpgradeable_verify"];

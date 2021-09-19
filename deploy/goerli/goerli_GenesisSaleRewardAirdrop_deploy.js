@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async ({ deployments }) => {
   const { deploy } = deployments;
@@ -16,4 +16,4 @@ module.exports = async ({ deployments }) => {
   });
   console.log("GenesisSaleRewardAirdrop contract address: ", genesisSaleRewardAirdrop.address);
 };
-module.exports.tags = ["ropsten_GenesisSaleRewardAirdrop_deploy"];
+module.exports.tags = ["goerli_GenesisSaleRewardAirdrop_deploy"];

@@ -22,7 +22,7 @@ task("accounts", "Prints the list of accounts", async () => {
 const isPolygon = (process.env.BLOCKCHAIN === 'polygon') ? true : false;
 const apiKey = isPolygon ? process.env.POLYGONSCAN_API_KEY : process.env.ETHERSCAN_API_KEY;
 const mainnetUrl = isPolygon ? process.env.ALCHEMY_URL_POLYGON_MAINNET : process.env.ALCHEMY_URL_MAINNET;
-const mainnetBlockNumber = isPolygon ? 17560298 : 12799732;
+const mainnetBlockNumber = isPolygon ? 17560298 : 13235100;
 
 module.exports = {
   solidity: {
@@ -47,8 +47,8 @@ module.exports = {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY]
     },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    goerli: {
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY]
     },
     polygonMainnet: {

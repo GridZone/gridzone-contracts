@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async ({ deployments }) => {
   const { deploy } = deployments;
@@ -19,4 +19,4 @@ module.exports = async ({ deployments }) => {
   console.log("NYM contract address: ", nym.address);
 
 };
-module.exports.tags = ["ropsten_NYM_deploy"];
+module.exports.tags = ["goerli_NYM_deploy"];

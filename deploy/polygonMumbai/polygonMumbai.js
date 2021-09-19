@@ -5,7 +5,6 @@ module.exports = async () => {
   const nymLibUpgradeableProxy = await ethers.getContract("NymLibUpgradeableProxy");
   const priceOracleUpgradeableProxy = await ethers.getContract("PriceOracleUpgradeableProxy");
   const biconomyMetaTxRelayUpgradeableProxy = await ethers.getContract("BiconomyMetaTxRelayUpgradeableProxy");
-  const rideNftFactory = await ethers.getContract("RideNftFactory");
   const nymFashionNftFactory = await ethers.getContract("NymFashionNftFactory");
 
   console.log("");
@@ -14,7 +13,6 @@ module.exports = async () => {
   console.log("    NymLibUpgradeableProxy address: ", nymLibUpgradeableProxy.address);
   console.log("    PriceOracleUpgradeableProxy address: ", priceOracleUpgradeableProxy.address);
   console.log("    BiconomyMetaTxRelayUpgradeableProxy address: ", biconomyMetaTxRelayUpgradeableProxy.address);
-  console.log("    RideNftFactory address: ", rideNftFactory.address);
   console.log("    NymFashionNftFactory address: ", nymFashionNftFactory.address);
   console.log("");
 };
@@ -24,12 +22,10 @@ module.exports.dependencies = [
   "polygonMumbai_NymLibUpgradeable_deploy",
   "polygonMumbai_PriceOracleUpgradeable_deploy",
   "polygonMumbai_BiconomyMetaTxRelayUpgradeable_deploy",
-  "polygonMumbai_RideNft_deploy",
   "polygonMumbai_NymFashionNft_deploy",
   "polygonMumbai_ProxyAdmin_verify",
   "polygonMumbai_NymLibUpgradeable_verify",
   "polygonMumbai_PriceOracleUpgradeable_verify",
   "polygonMumbai_BiconomyMetaTxRelayUpgradeable_verify",
-  "polygonMumbai_RideNft_verify",
   "polygonMumbai_NymFashionNft_verify",
 ];

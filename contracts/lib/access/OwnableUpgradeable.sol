@@ -73,12 +73,18 @@ abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
      * Can only be called by the current owner.
      */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function safeTransferOwnership(address newOwner, bool safely) public virtual onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
-        _pendingOwner = newOwner;
+        if (safely) {
+            _pendingOwner = newOwner;
+        } else {
+            emit OwnershipTransferred(_owner, newOwner);
+            _owner = newOwner;
+            _pendingOwner = address(0);
+        }
     }
 
-    function acceptOwnership() external {
+    function safeAcceptOwnership() external {
         require(msg.sender == _pendingOwner, "acceptOwnership: Call must come from pendingOwner.");
         emit OwnershipTransferred(_owner, _pendingOwner);
         _owner = _pendingOwner;

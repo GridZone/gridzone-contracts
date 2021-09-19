@@ -30,7 +30,6 @@ contract BaseNftFactory is Ownable {
         require(_ownerAddress != address(0), "Owner address is invalid");
         require(_proxyAdminAddress != address(0), "Proxy admin address is invalid");
         require(_impl != address(0), "NFT implementation address is invalid");
-        require(_relayerAddress != address(0), "MetaTransaction relayer is invalid");
 
         nymLib = _nymLib;
         priceOracle = _priceOracle;
@@ -84,7 +83,9 @@ contract BaseNftFactory is Ownable {
         );
 
         address nft = newNftProxy(data);
-        relayerAddress.allowRelay(nft);
+        if (address(relayerAddress) != address(0)) {
+            relayerAddress.allowRelay(nft);
+        }
         nfts.push(nft);
         emit NewNFT(nft, _name, _symbol, _metafileUris, _capacity, _price, _nameChangeable, _colorChangeable, _color);
     }

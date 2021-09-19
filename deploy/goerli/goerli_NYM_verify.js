@@ -1,5 +1,5 @@
 const { ethers, run } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async () => {
   const nymLibUpgradeableProxy = await ethers.getContract("NymLibUpgradeableProxy");
@@ -17,4 +17,4 @@ module.exports = async () => {
   } catch(e) {
   }
 };
-module.exports.tags = ["ropsten_NYM_verify"];
+module.exports.tags = ["goerli_NYM_verify"];

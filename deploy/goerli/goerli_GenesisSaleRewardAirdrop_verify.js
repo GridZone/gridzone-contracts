@@ -1,5 +1,5 @@
 const { ethers, run } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async () => {
   const genesisSaleRewardAirdrop = await ethers.getContract("GenesisSaleRewardAirdrop");
@@ -16,4 +16,4 @@ module.exports = async () => {
   } catch(e) {
   }
 };
-module.exports.tags = ["ropsten_GenesisSaleRewardAirdrop_verify"];
+module.exports.tags = ["goerli_GenesisSaleRewardAirdrop_verify"];

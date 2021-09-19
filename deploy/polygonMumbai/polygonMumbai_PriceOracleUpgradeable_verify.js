@@ -18,11 +18,10 @@ module.exports = async () => {
   const data = iface.encodeFunctionData("initialize", [
     network_.Global.ownerAddress,
     network_.ZONE.tokenAddress,
-    network_.PriceOracle.slpZoneEth,
-    network_.PriceOracle.slpReserveWeight,
+    network_.PriceOracle.lpZoneEth,
     network_.PriceOracle.usePoolPrice,
-    network_.PriceOracle.zoneReserveInSLP,
-    network_.PriceOracle.ethReserveInSLP,
+    network_.PriceOracle.zoneReserveInLP,
+    network_.PriceOracle.ethReserveInLP,
   ]);
 
   const proxy = await ethers.getContract("PriceOracleUpgradeableProxy");

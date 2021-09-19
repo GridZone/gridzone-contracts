@@ -5,7 +5,7 @@ module.exports = async ({ deployments }) => {
   const { deploy } = deployments;
   const [deployer] = await ethers.getSigners();
 
-  console.log("Now deploying ProxyAdmin on Polygon Mainnet...");
+  console.log("Now deploying ProxyAdmin on Mainnet...");
   const proxyAdmin = await deploy("ProxyAdmin", {
     from: deployer.address,
     args: [

@@ -1,5 +1,5 @@
 const { ethers, run } = require("hardhat");
-const { ropsten: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async () => {
   const gridZoneStakingBot = await ethers.getContract("GridZoneStakingBot");
@@ -15,4 +15,4 @@ module.exports = async () => {
   } catch(e) {
   }
 };
-module.exports.tags = ["ropsten_GridZoneStakingBot_verify"];
+module.exports.tags = ["goerli_GridZoneStakingBot_verify"];
