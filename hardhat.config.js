@@ -4,6 +4,7 @@ require('@nomiclabs/hardhat-ethers');
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
 require("hardhat-gas-reporter");
+require('hardhat-contract-sizer');
 require("dotenv").config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -22,7 +23,7 @@ task("accounts", "Prints the list of accounts", async () => {
 const isPolygon = (process.env.BLOCKCHAIN === 'polygon') ? true : false;
 const apiKey = isPolygon ? process.env.POLYGONSCAN_API_KEY : process.env.ETHERSCAN_API_KEY;
 const mainnetUrl = isPolygon ? process.env.ALCHEMY_URL_POLYGON_MAINNET : process.env.ALCHEMY_URL_MAINNET;
-const mainnetBlockNumber = isPolygon ? 17560298 : 13235100;
+const mainnetBlockNumber = isPolygon ? 17560298 : 13406300;
 
 module.exports = {
   solidity: {
@@ -69,4 +70,10 @@ module.exports = {
   mocha: {
     timeout: 50000
   },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: false,
+    strict: true,
+  }
 };

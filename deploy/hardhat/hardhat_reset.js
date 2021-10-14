@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const isPolygon = (process.env.BLOCKCHAIN === 'polygon') ? true : false;
 const mainnetUrl = isPolygon ? process.env.ALCHEMY_URL_POLYGON_MAINNET : process.env.ALCHEMY_URL_MAINNET;
-const mainnetBlockNumber = isPolygon ? 17560298 : 13235100;
+const mainnetBlockNumber = isPolygon ? 17560298 : 13406300;
 
 module.exports = async () => {
   await network.provider.request({

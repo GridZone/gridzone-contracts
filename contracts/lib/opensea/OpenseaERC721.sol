@@ -4,12 +4,7 @@ pragma solidity 0.7.6;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "../eip712/EIP712MetaTx.sol";
-
-contract OwnableDelegateProxy {}
-
-contract ProxyRegistry {
-    mapping(address => OwnableDelegateProxy) public proxies;
-}
+import "./OpenseaProxyRegistry.sol";
 
 /**
  * @title OpenseaERC721
@@ -37,7 +32,7 @@ contract OpenseaERC721 is ERC721, EIP712MetaTx {
     function isApprovedForAll(address tokenOwner, address operator) override public view returns (bool) {
         // Whitelist OpenSea proxy contract for easy trading.
         if (proxyRegistryAddress != address(0)) {
-            ProxyRegistry proxyRegistry = ProxyRegistry(proxyRegistryAddress);
+            OpenseaProxyRegistry proxyRegistry = OpenseaProxyRegistry(proxyRegistryAddress);
             if (address(proxyRegistry.proxies(tokenOwner)) == operator) {
                 return true;
             }

@@ -8,6 +8,7 @@ import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 
 import "../lib/access/OwnableUpgradeable.sol";
+import "../lib/util/MathUtil.sol";
 import './UniswapV2OracleLibrary.sol';
 
 /**
@@ -34,10 +35,10 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     uint256 public constant PERIOD = 24 hours;
     uint32  public blockTimestampLast;
 
-    // The last cumulative price of ETH in ZONE
-    uint256 public priceCumulativeLast;
-    // The average price of ETH in ZONE
-    FixedPoint.uq112x112 public priceAverage;
+    uint256 public price0CumulativeLast;
+    uint256 public price1CumulativeLast;
+    FixedPoint.uq112x112 public price0AverageLast;
+    FixedPoint.uq112x112 public price1AverageLast;
 
     // Events
     event ActivatePoolPrice (bool newUsePoolPrice, uint256 newZoneReserveInLP, uint256 newEthReserveInLP);
@@ -101,29 +102,69 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     function _setZoneEthLP(address _lpZoneEth) internal {
         lpZoneEth = IUniswapV2Pair(_lpZoneEth);
         if (address(lpZoneEth) != address(0)) {
-            (uint112 reserve0, uint112 reserve1, uint32 blockTimestamp) = lpZoneEth.getReserves();
-            require(reserve0 != 0 && reserve1 != 0, 'No reserves on the liquidity pool');
-
-            // fetch the current accumulated price value (1 / 0)
-            priceCumulativeLast = (lpZoneEth.token1() == zoneToken) ? lpZoneEth.price0CumulativeLast() : lpZoneEth.price1CumulativeLast();
-            blockTimestampLast = blockTimestamp;
-            priceAverage._x = 0;
+            _updateFirst();
         }
     }
 
-    function _update() internal {
+    function _updateFirst() internal {
+        (uint112 reserve0, uint112 reserve1,) = lpZoneEth.getReserves();
+        require(reserve0 != 0 && reserve1 != 0, 'No liquidity on the pool');
+
+        price0AverageLast = FixedPoint.fraction(reserve1, reserve0);
+        price1AverageLast = FixedPoint.fraction(reserve0, reserve1);
+
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(address(lpZoneEth));
+        price0CumulativeLast = price0Cumulative;
+        price1CumulativeLast = price1Cumulative;
+        blockTimestampLast = blockTimestamp;
+    }
+
+    function update() public {
+        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(address(lpZoneEth));
+
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        // ensure that at least one full period has passed since the last update
+        require(PERIOD <= timeElapsed, 'PriceOracleUpgradeable: PERIOD_NOT_ELAPSED');
 
-        // ensure that at least one full period has passed since the last update, or it's first calculation
-        if ((PERIOD <= timeElapsed) || (priceAverage._x == 0 && 0 < timeElapsed)) {
-            uint256 priceCumulative = (lpZoneEth.token1() == zoneToken) ? price0Cumulative : price1Cumulative;
-            // overflow is desired, casting never truncates
-            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-            priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - priceCumulativeLast) / timeElapsed));
+        // overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+        price0AverageLast = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
+        price1AverageLast = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
 
-            priceCumulativeLast = priceCumulative;
-            blockTimestampLast = blockTimestamp;
+        price0CumulativeLast = price0Cumulative;
+        price1CumulativeLast = price1Cumulative;
+        blockTimestampLast = blockTimestamp;
+    }
+
+    /**
+     * @notice Get price for token from TOKEN/ETH pair
+     * @param token The token
+     * @return The price
+     */
+    function getOutAmount(address token, uint256 tokenAmount) public view returns (uint256) {
+        if (address(lpZoneEth) == address(0)) {
+            return 0;
+        }
+
+        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = 
+            UniswapV2OracleLibrary.currentCumulativePrices(address(lpZoneEth));
+
+        FixedPoint.uq112x112 memory price0Average;
+        FixedPoint.uq112x112 memory price1Average;
+        uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+        if (PERIOD <= timeElapsed) {
+            // The average price is too old
+            price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
+            price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
+        } else {
+            price0Average = price0AverageLast;
+            price1Average = price1AverageLast;
+        }
+
+        if (token == lpZoneEth.token0()) {
+            return price0Average.mul(tokenAmount).decode144();
+        } else {
+            return price1Average.mul(tokenAmount).decode144();
         }
     }
 
@@ -134,13 +175,39 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
         if (_mintPriceInEth == 0) return 0;
 
         if (usePoolPrice && address(lpZoneEth) != address(0)) {
-            _update();
-            return priceAverage.mul(_mintPriceInEth).decode144();
+            uint32 blockTimestamp = UniswapV2OracleLibrary.currentBlockTimestamp();
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            if (PERIOD <= timeElapsed) {
+                // It's needed to update the average price
+                update();
+            }
+            return (zoneToken == lpZoneEth.token1())
+                ? price0AverageLast.mul(_mintPriceInEth).decode144()
+                : price1AverageLast.mul(_mintPriceInEth).decode144();
         } else {
             if (zoneReserveInLP == 0 || ethReserveInLP == 0) return 0;
             return _mintPriceInEth.mul(zoneReserveInLP).div(ethReserveInLP);
         }
     }
 
-    uint256[42] private __gap;
+    /**
+     * @notice Get the fair price of a LP. We use the mechanism from Alpha Finance.
+     *         Ref: https://blog.alphafinance.io/fair-lp-token-pricing/
+     * @return The price in ETH
+     */
+    function getLPFairPrice() public view returns (uint256) {
+        if (address(lpZoneEth) == address(0)) {
+            return 0;
+        }
+
+        uint256 totalSupply = lpZoneEth.totalSupply();
+        (uint256 r0, uint256 r1, ) = lpZoneEth.getReserves();
+        uint256 sqrtR = MathUtil.sqrt(r0.mul(r1));
+        uint256 p0 = 1e18; // ETH price
+        uint256 p1 = getOutAmount(zoneToken, 1e18); // ZONE price in ETH
+        uint256 sqrtP = MathUtil.sqrt(p0.mul(p1));
+        return sqrtR.mul(sqrtP).mul(2).div(totalSupply);
+    }
+
+    uint256[40] private __gap;
 }

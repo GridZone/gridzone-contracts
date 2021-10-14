@@ -2,6 +2,8 @@ const { expect } = require("chai");
 const { ethers, deployments } = require("hardhat");
 const { expectRevert } = require('@openzeppelin/test-helpers');
 const sigUtil = require('eth-sig-util');
+const { BigNumber, utils } = ethers;
+const parseEther = utils.parseEther;
 
 const { polygonMainnet: network_ } = require("../../parameters");
 const ZONE_ABI = require("../../abis/ZONE_ABI.json");
@@ -150,32 +152,28 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be correctly set', async () => {
-      await expectRevert(priceOracle.activatePoolPrice(false, 3000, 2), "revert Ownable: caller is not the owner");
+      await expectRevert(priceOracle.activatePoolPrice(false, 3000, 2), "Ownable: caller is not the owner");
       await priceOracle.connect(owner).activatePoolPrice(false, 3000, 2);
       expect(await priceOracle.usePoolPrice()).to.equal(false);
       expect(await priceOracle.zoneReserveInLP()).to.equal(3000);
       expect(await priceOracle.ethReserveInLP()).to.equal(2);
 
-      await expectRevert(priceOracle.setZoneEthLP(network_.PriceOracle.lpZoneEth), "revert Ownable: caller is not the owner");
+      await expectRevert(priceOracle.setZoneEthLP(network_.PriceOracle.lpZoneEth), "Ownable: caller is not the owner");
       await priceOracle.connect(owner).setZoneEthLP(network_.PriceOracle.lpZoneEth);
       expect(await priceOracle.lpZoneEth()).to.equal(network_.PriceOracle.lpZoneEth);
-      const ret = await priceOracle.priceAverage();
-      expect(await priceOracle.priceAverage()).to.equal(0);
+      expect((await priceOracle.price0AverageLast()).gt(0)).to.equal(true);
 
       await priceOracle.connect(owner).activatePoolPrice(true, 3000, 2);
       expect(await priceOracle.usePoolPrice()).to.equal(true);
 
       await priceOracle.mintPriceInZone(100);
-      expect((await priceOracle.priceAverage()).gt(0)).to.equal(true);
+      expect((await priceOracle.price0AverageLast()).gt(0)).to.equal(true);
     });
 
     it('should return the correct price', async () => {
-      let priceInZone = await priceOracle.callStatic.mintPriceInZone(100);
-      expect(await priceOracle.getMintPriceInZone(100)).to.equal(priceInZone);
-
-      await priceOracle.mintPriceInZone(100);
-      priceInZone = await priceOracle.callStatic.mintPriceInZone(100);
-      expect(await priceOracle.getMintPriceInZone(100)).to.equal(priceInZone);
+      await priceOracle.mintPriceInZone(parseEther("1"));
+      const priceInZone = await priceOracle.callStatic.mintPriceInZone(parseEther("1"));
+      expect(priceInZone.div(parseEther("1")).toNumber()).to.greaterThan(0);
     });
   });
 
@@ -189,7 +187,7 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should be correctly deploy the ride contracts', async () => {
-      await expectRevert(factory.createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]), "revert Ownable: caller is not the owner");
+      await expectRevert(factory.createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]), "Ownable: caller is not the owner");
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, false, false, [0x01234567, 0x89ABCDEF]);
 
       expect(await proxyAdmin.getProxyAdmin(factory.nfts(0))).to.equal(proxyAdmin.address); // proxy admin
@@ -213,8 +211,8 @@ describe('BaseNftUpgradeable', () => {
     });
 
     it('should correctly handle the abnormal values while deploying', async () => {
-      await expectRevert(factory.connect(owner).createNFT("", "RIDE0", [rideUri], 100, mintPrice, false, false, []), "revert Factory: name is empty");
-      await expectRevert(factory.connect(owner).createNFT("RideNft0", "", [rideUri], 100, mintPrice, false, false, []), "revert Factory: symbol is empty");
+      await expectRevert(factory.connect(owner).createNFT("", "RIDE0", [rideUri], 100, mintPrice, false, false, []), "Factory: name is empty");
+      await expectRevert(factory.connect(owner).createNFT("RideNft0", "", [rideUri], 100, mintPrice, false, false, []), "Factory: symbol is empty");
     });
 
     it('should set the capacity as maximum value when it is input as 0', async () => {
@@ -242,7 +240,7 @@ describe('BaseNftUpgradeable', () => {
     it('setOpenseaProxyRegistry method', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const nftContract0 = getNftContract(await factory.nfts(0), a1);
-      await expectRevert(nftContract0.setOpenseaProxyRegistry(a1.address), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.setOpenseaProxyRegistry(a1.address), "Ownable: caller is not the owner");
       await nftContract0.connect(owner).setOpenseaProxyRegistry(a1.address);
       expect(await nftContract0.proxyRegistryAddress()).to.equal(a1.address);
     });
@@ -253,8 +251,8 @@ describe('BaseNftUpgradeable', () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
-      await expectRevert(nftContract0.setUris([uri0]), "revert Ownable: caller is not the owner");
-      await expectRevert(nftContract0.connect(owner).setUris([]), "revert Metafiles must be specified at least one");
+      await expectRevert(nftContract0.setUris([uri0]), "Ownable: caller is not the owner");
+      await expectRevert(nftContract0.connect(owner).setUris([]), "Metafiles must be specified at least one");
       await nftContract0.connect(owner).setUris([uri0, uri1]);
       expect(await nftContract0.tokenURI(1)).to.equal(uri1);
       expect(await nftContract0.tokenURI(2)).to.equal(uri0);
@@ -264,7 +262,7 @@ describe('BaseNftUpgradeable', () => {
     it('setMintPrice method', async () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 100, mintPrice, true, false, []);
       const nftContract0 = getNftContract(await factory.nfts(0), a1);
-      await expectRevert(nftContract0.setMintPrice(123), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.setMintPrice(123), "Ownable: caller is not the owner");
       await nftContract0.connect(owner).setMintPrice(123);
       expect(await nftContract0.mintPrice()).to.equal(123);
       expect((await nftContract0.callStatic.mintPriceInZone()).toNumber()).to.greaterThan(0);
@@ -357,7 +355,7 @@ describe('BaseNftUpgradeable', () => {
       expect(await zoneToken.balanceOf(nftContract0.address)).to.equal(priceInZone.mul(2));
 
       // withdraw
-      await expectRevert(nftContract0.withdraw(), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.withdraw(), "Ownable: caller is not the owner");
       const ownerBalance = await zoneToken.balanceOf(owner.address);
       await nftContract0.connect(owner).withdraw();
       expect(await zoneToken.balanceOf(owner.address)).to.equal(ownerBalance.add(priceInZone.mul(2)));
@@ -369,8 +367,8 @@ describe('BaseNftUpgradeable', () => {
       await factory.connect(owner).createNFT("RideNft0", "RIDE0", [rideUri], 10, mintPrice, true, true, [0x01234567, 0x89ABCDEF]);
       const nftContract0 = getNftContract(await factory.nfts(0), a1);
 
-      await expectRevert(nftContract0.doAirdrop([a1.address]), "revert Restricted access to admin");
-      await expectRevert(nftContract0.setAdmin(a2.address), "revert Ownable: caller is not the owner");
+      await expectRevert(nftContract0.doAirdrop([a1.address]), "Restricted access to admin");
+      await expectRevert(nftContract0.setAdmin(a2.address), "Ownable: caller is not the owner");
       await nftContract0.connect(owner).setAdmin(a2.address);
 
       await expectRevert(nftContract0.connect(a2).doAirdrop([]), "Nft: No account address");

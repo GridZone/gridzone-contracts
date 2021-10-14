@@ -220,31 +220,33 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
      * @dev Airdrop tokens to the specifeid addresses (Callable by owner).
      *      The count is limited as 30 to avoid spending much gas and to avoid exceed block gas limit.
      */
-    function doAirdrop(address[] memory _accounts) external onlyAdmin() {
-        require(0 < _accounts.length, "Nft: No account address");
-        require(_accounts.length <= 30, "Exceeds limit");
-        require((totalSupply() + _accounts.length) <= capacity, "Exceeds capacity");
+    function doAirdrop(address[] memory _accounts) external override onlyAdmin() returns(uint256 leftCapacity) {
+        require(0 < _accounts.length, "BaseNft: Nft: No account address");
+        require(_accounts.length <= 30, "BaseNft: Exceeds limit");
+        require((totalSupply() + _accounts.length) <= capacity, "BaseNft: Exceeds capacity");
 
         for (uint i = 0; i < _accounts.length; i ++) {
             address account = _accounts[i];
-            require(tokenIdsAirdropped[account] == 0, "Only one time airdrop is allowed per user");
+            require(tokenIdsAirdropped[account] == 0, "BaseNft: Only one time airdrop is allowed per user");
 
             uint tokenId = ++ _currentTokenId;
-            _safeMint(account, tokenId);
             tokenIdsAirdropped[account] = tokenId;
+            _safeMint(account, tokenId);
             emit Airdrop(account, tokenId);
         }
+        leftCapacity = capacity.sub(totalSupply());
     }
 
-    function doAirdropBySignature(address _account, bytes memory _signature) external {
-        require(tokenIdsAirdropped[_account] == 0, "Only one time airdrop is allowed per user");
-        require(totalSupply() < capacity, "Exceeds capacity");
-        require(_isValidSignature(_account, _signature), "The specified account is not allowed for airdrop");
+    function doAirdropBySignature(address _account, bytes memory _signature) external returns(uint256 leftCapacity) {
+        require(tokenIdsAirdropped[_account] == 0, "BaseNft: Only one time airdrop is allowed per user");
+        require(totalSupply() < capacity, "BaseNft: Exceeds capacity");
+        require(_isValidSignature(_account, _signature), "BaseNft: The specified account is not allowed for airdrop");
 
         uint tokenId = ++ _currentTokenId;
-        _safeMint(_account, tokenId);
         tokenIdsAirdropped[_account] = tokenId;
+        _safeMint(_account, tokenId);
         emit Airdrop(_account, tokenId);
+        leftCapacity = capacity.sub(totalSupply());
     }
 
     function _isValidSignature(address _account, bytes memory _signature) internal view returns (bool) {

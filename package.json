@@ -7,6 +7,7 @@
     "compile": "npx hardhat compile",
     "node": "npx hardhat node --no-deploy",
     "test": "npx hardhat test",
+    "size-contracts": "npx hardhat size-contracts",
     "flatten": "./node_modules/.bin/poa-solidity-flattener"
   },
   "keywords": [],
@@ -25,6 +26,7 @@
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.0.31",
     "hardhat": "^2.6.4",
+    "hardhat-contract-sizer": "^2.1.1",
     "hardhat-deploy": "^0.9.1",
     "hardhat-deploy-ethers": "^0.3.0-beta.10",
     "hardhat-gas-reporter": "^1.0.4"

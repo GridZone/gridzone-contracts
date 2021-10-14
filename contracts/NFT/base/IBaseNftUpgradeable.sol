@@ -2,7 +2,7 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-abstract contract IBaseNftUpgradeable {
+interface IBaseNftUpgradeable {
 
     function initialize(
         address _nymLib,
@@ -16,6 +16,8 @@ abstract contract IBaseNftUpgradeable {
         bool _nameChangeable,
         bool _colorChangeable,
         bytes4[] memory _color
-    ) public virtual;
+    ) external;
+
+    function doAirdrop(address[] memory _accounts) external returns(uint256 leftCapacity);
 
 }

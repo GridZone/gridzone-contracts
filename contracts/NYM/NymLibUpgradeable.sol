@@ -26,7 +26,7 @@ contract NymLibUpgradeable is INymLib {
 
         bytes1 lastChar = b[0];
 
-        for(uint i; i<b.length; i++){
+        for(uint i=0; i<b.length; i++){
             bytes1 char = b[i];
 
             if (char == 0x20 && lastChar == 0x20) return false; // Cannot contain continous spaces

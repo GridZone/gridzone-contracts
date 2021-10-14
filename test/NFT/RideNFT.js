@@ -50,7 +50,6 @@ describe('MultiModelNftUpgradeable', () => {
   describe('initial value', () => {
     it('initial address', async () => {
       expect(await contract.owner()).to.equal(owner.address);
-      expect(await contract.admin()).to.equal(deployer.address);
       expect(await contract.zoneToken()).to.equal(zoneToken.address);
     });
 
@@ -143,7 +142,7 @@ describe('MultiModelNftUpgradeable', () => {
       expect(await contract.tokenNameById(tokenId)).to.equal("");
     });
 
-    it('mint mintWithParams', async () => {
+    it('mintWithParams methods', async () => {
       let modelId = 1;
       let priceInZone = await contract.callStatic.mintPriceInZone(modelId);
       await zoneToken.connect(owner).transfer(a1.address, priceInZone);
@@ -187,9 +186,10 @@ describe('MultiModelNftUpgradeable', () => {
   describe('airdrop', () => {
     it('doAirdrop should be failed with incorrect pramaters', async () => {
       let modelId = 0;
-      await expectRevert(contract.doAirdrop(modelId, [a1.address]), "Restricted access to admin");
-      await expectRevert(contract.setAdmin(a2.address), "Ownable: caller is not the owner");
-      await contract.connect(owner).setAdmin(a2.address);
+      await expectRevert(contract.doAirdrop(modelId, [a1.address]), "Restricted access to minters");
+      const ALLOWED_MINTERS = await contract.ALLOWED_MINTERS();
+      await expectRevert(contract.grantRole(ALLOWED_MINTERS, a2.address), "AccessControl: sender must be an admin to grant");
+      await contract.connect(owner).grantRole(ALLOWED_MINTERS, a2.address);
 
       await expectRevert(contract.connect(a2).doAirdrop(modelId, [
         "0xa23cff7a4f319445e4584897941bf478b4931abc",
@@ -232,7 +232,8 @@ describe('MultiModelNftUpgradeable', () => {
       expect(await contract.airdropNonces(accounts[1].address)).to.equal(0);
       expect(await contract.airdropNonces(accounts[2].address)).to.equal(0);
 
-      await contract.connect(owner).setAdmin(a2.address);
+      const ALLOWED_MINTERS = await contract.ALLOWED_MINTERS();
+      await contract.connect(owner).grantRole(ALLOWED_MINTERS, a2.address);
       await contract.connect(a2).doAirdrop(modelId, [
         accounts[0].address,
         accounts[1].address,
@@ -243,28 +244,29 @@ describe('MultiModelNftUpgradeable', () => {
       expect(await contract.ownerOf(2)).to.equal(accounts[1].address);
       expect(await contract.ownerOf(3)).to.equal(accounts[2].address);
 
-      expect(await contract.airdropNonces(accounts[0].address)).to.equal(1);
-      expect(await contract.airdropNonces(accounts[1].address)).to.equal(1);
-      expect(await contract.airdropNonces(accounts[2].address)).to.equal(1);
+      expect(await contract.airdropNonces(accounts[0].address)).to.equal(0);
+      expect(await contract.airdropNonces(accounts[1].address)).to.equal(0);
+      expect(await contract.airdropNonces(accounts[2].address)).to.equal(0);
     });
 
     it('doAirdropBySignature should be succeed with correct pramaters', async () => {
       let modelId = 0;
       let nonce = 0;
-      await contract.connect(owner).setAdmin(a2.address);
+      const ALLOWED_MINTERS = await contract.ALLOWED_MINTERS();
+      await contract.connect(owner).grantRole(ALLOWED_MINTERS, a2.address);
 
       const message = ethers.utils.solidityKeccak256(
-        ["address", "uint256", "address", "uint256"],
-        [contract.address, modelId, accounts[0].address, nonce]
+        ["address", "uint256", "address", "uint256", "uint256"],
+        [contract.address, modelId, accounts[0].address, 2, nonce]
       );
       const signature = await a2.signMessage(ethers.utils.arrayify(message));
 
-      await contract.doAirdropBySignature(modelId, accounts[0].address, signature);
-      expect(await contract.totalSupply()).to.equal(1);
+      await contract.doAirdropBySignature(modelId, accounts[0].address, 2, signature);
+      expect(await contract.totalSupply()).to.equal(2);
       expect(await contract.ownerOf(1)).to.equal(accounts[0].address);
-      expect(await contract.airdropNonces(accounts[0].address)).to.equal(1);
+      expect(await contract.airdropNonces(accounts[0].address)).to.equal(2);
 
-      await expectRevert(contract.doAirdropBySignature(modelId, accounts[0].address, signature), "Invalid signature");
+      await expectRevert(contract.doAirdropBySignature(modelId, accounts[0].address, 2, signature), "Invalid signature");
     });
   });
 

@@ -2,13 +2,11 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
-import "../../lib/access/OwnableUpgradeable.sol";
-import "../../lib/opensea/OpenseaERC721Upgradeable.sol";
+import "./MultiModelNftUpgradeableBase.sol";
 import "../../PriceOracle/IPriceOracleUpgradeable.sol";
 import "../../NYM/INymLib.sol";
 
@@ -16,71 +14,32 @@ import "../../NYM/INymLib.sol";
  * @title MultiModelNftUpgradeable
  * @dev Extends ERC721 Non-Fungible Token Standard basic implementation
  */
-contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeable {
+contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
 
-    struct Model {
-        // Bonus percent of the model
-        uint8 bonus;
-        // Class of the model
-        uint8 class;
-        // Name of the model
-        string name;
-        // URI of the model
-        string metafileUri;
-        // Capacity of the model
-        uint256 capacity;
-        // Count of token of the model
-        uint256 supply;
-        // Minting price in ETH
-        uint256 mintPrice;
-        // Default color of the model
-        bytes4[] defaultColor;
-    }
-
-    INymLib public nymLib;
-    IPriceOracleUpgradeable public priceOracle;
-
-    uint256 private _currentTokenId = 0;
-
-    /// @notice The address of the GridZone token
-    IERC20Upgradeable public zoneToken;
-
-    // Mapping from token ID to name
-    mapping (uint256 => string) private _tokenName;
-    // Mapping if certain name string has already been reserved
-    mapping (string => bool) private _nameReserved;
-    // Option to changeable name
-    bool public nameChangeable;
-
-    // Option to changeable color
-    bool public colorChangeable;
-    // Mapping if certain name string has already been reserved
-    mapping (uint256 => bytes4[]) private _colors;
-
-    // Array of models
-    Model[] public models;
-    // Mapping from token ID to model ID
-    mapping (uint256 => uint256) public modelIds;
-
-    // Admin address to do airdrop
-    address private _admin;
-    // The nonce for airdrop.
-    mapping(address => uint256) public airdropNonces;
-
     // Events
-    event AddModel (uint8 class, string name, string metafileUri, uint256 capacity, uint256 mintPrice, bytes4[] defaultColor, uint8 bonus);
-    event ModelNewUri (uint256 indexed modelId, string newUri);
-    event ModelNewMintPrice (uint256 indexed modelId, uint256 newMintPrice);
     event Mint (uint256 indexed modelId, address indexed account, uint256 mintFee, uint256 indexed tokenId, string newName, bytes4[] newColor);
-    event Airdrop (uint256 indexed modelId, address indexed account, uint256 indexed tokenId);
     event NameChange (uint256 indexed tokenId, string newName);
     event ColorChange (uint256 indexed tokenId, bytes4[] newColor);
+    event NewSubImpl (address indexed newSubImpl);
 
-    modifier onlyAdmin() {
-        require(_admin == _msgSender(), "Restricted access to admin");
-        _;
+    function safeTransferOwnership(address newOwner, bool safely) public override onlyOwner {
+        address _oldOwner = owner();
+        super.safeTransferOwnership(newOwner, safely);
+        if (!safely) {
+            _setupRole(DEFAULT_ADMIN_ROLE, newOwner);
+            revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
+        }
+    }
+
+    function safeAcceptOwnership() public override {
+        address _oldOwner = owner();
+        address _pendingOwner = pendingOwner();
+        super.safeAcceptOwnership();
+
+        _setupRole(DEFAULT_ADMIN_ROLE, _pendingOwner);
+        revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
     }
 
     /**
@@ -100,7 +59,8 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
         string memory _name,
         string memory _symbol,
         bool _nameChangeable,
-        bool _colorChangeable
+        bool _colorChangeable,
+        address _subImpl
     ) public initializer {
         require(_nymLib != address(0), "NYM library address is zero");
         require(_priceOracle != address(0), "Price oracle address is zero");
@@ -108,33 +68,18 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
 
         __Ownable_init(_ownerAddress);
 		__OpenseaERC721_init_unchained(_name, _symbol, address(0));
+        __AccessControl_init();
         nymLib = INymLib(_nymLib);
         priceOracle = IPriceOracleUpgradeable(_priceOracle);
         nameChangeable = _nameChangeable;
         colorChangeable = _colorChangeable;
 
-        _admin = _ownerAddress;
+        subImpl = _subImpl;
 
         zoneToken = IERC20Upgradeable(priceOracle.zoneToken());
         require(address(zoneToken) != address(0), "ZONE token address is invalid");
-    }
 
-    function _msgSender() internal override view returns (address payable) {
-        return EIP712MetaTxUpgradeable.msgSender();
-    }
-
-    /**
-     * @dev Return admin address for the airdrop
-     */
-    function admin() external view returns(address) {
-        return _admin;
-    }
-
-    /**
-     * @dev Update admin address
-     */
-    function setAdmin(address _adminAddress) external onlyOwner() {
-        _admin = _adminAddress;
+        _setupRole(DEFAULT_ADMIN_ROLE, _ownerAddress);
     }
 
     /**
@@ -162,51 +107,43 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
         uint256[] memory _mintPrices,
         bytes4[][] memory _defaultColors,
         uint8[] memory _bonuses
-    ) external onlyOwner() {
-        require(
-            _classes.length == _names.length
-            && _classes.length == _metafileUris.length
-            && _classes.length == _capacities.length
-            && _classes.length == _mintPrices.length
-            && _classes.length == _defaultColors.length
-            && _classes.length == _bonuses.length,
-            "Mismatched data"
-        );
-
-        for (uint256 i = 0; i < _bonuses.length; i ++) {
-            Model memory model = Model({
-                bonus: _bonuses[i],
-                class: _classes[i],
-                name: _names[i],
-                metafileUri: _metafileUris[i],
-                capacity: _capacities[i],
-                supply: 0,
-                mintPrice: _mintPrices[i],
-                defaultColor: _defaultColors[i]
-            });
-            models.push(model);
-            emit AddModel (model.class, model.name, model.metafileUri, model.capacity, model.mintPrice, model.defaultColor, model.bonus);
-        }
+    ) external {
+        _classes;
+        _names;
+        _metafileUris;
+        _capacities;
+        _mintPrices;
+        _defaultColors;
+        _bonuses;
+        delegateAndReturn();
     }
 
-    function modelCount() public view returns (uint256) {
-        return models.length;
+    function setModelUri(uint256 _modelId, string memory _metafileUri) external {
+        _modelId;
+        _metafileUri;
+        delegateAndReturn();
+    }
+
+    function setModelMintPrice(uint256 _modelId, uint256 _mintPrice) external {
+        _modelId;
+        _mintPrice;
+        delegateAndReturn();
+    }
+
+    function setModelCapacities(uint256[] memory _modelIds, uint256[] memory _capacities) external {
+        _modelIds;
+        _capacities;
+        delegateAndReturn();
+    }
+
+    function setModelAirdropCapacities(uint256[] memory _modelIds, uint256[] memory _capacities) external {
+        _modelIds;
+        _capacities;
+        delegateAndReturn();
     }
 
     function getDefaultColor(uint256 _modelId) external view returns(bytes4[] memory) {
         return models[_modelId].defaultColor;
-    }
-
-    function setModelUri(uint256 _modelId, string memory _metafileUri) external onlyOwner() {
-        require(_modelId < modelCount(), "Invalid model ID");
-        models[_modelId].metafileUri = _metafileUri;
-        emit ModelNewUri(_modelId, models[_modelId].metafileUri);
-    }
-
-    function setModelMintPrice(uint256 _modelId, uint256 _mintPrice) external onlyOwner() {
-        require(_modelId < modelCount(), "Invalid model ID");
-        models[_modelId].mintPrice = _mintPrice;
-        emit ModelNewMintPrice(_modelId, models[_modelId].mintPrice);
     }
 
     /**
@@ -256,8 +193,8 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
             _changeColor(tokenId, _newColor);
         }
 
-        _safeMint(sender, tokenId);
         modelIds[tokenId] = _modelId;
+        _safeMint(sender, tokenId);
         emit Mint(_modelId, sender, mintFee, tokenId, _newName, _newColor);
     }
 
@@ -265,47 +202,18 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
      * @dev Airdrop tokens to the specifeid addresses (Callable by owner).
      *      The supply is limited as 30 to avoid spending much gas and to avoid exceed block gas limit.
      */
-    function doAirdrop(uint256 _modelId, address[] memory _accounts) external onlyAdmin() {
-        require(_modelId < modelCount(), "Invalid model ID");
-        require(0 < _accounts.length, "No account address");
-        require(_accounts.length <= 30, "Exceeds limit");
-
-        Model storage model = models[_modelId];
-        require((model.supply + _accounts.length) <= model.capacity, "Exceeds capacity");
-        model.supply += _accounts.length;
-
-        for (uint i = 0; i < _accounts.length; i ++) {
-            address account = _accounts[i];
-            uint tokenId = ++ _currentTokenId;
-            _safeMint(account, tokenId);
-            modelIds[tokenId] = _modelId;
-            airdropNonces[account] ++;
-            emit Airdrop(_modelId, account, tokenId);
-        }
+    function doAirdrop(uint256 _modelId, address[] memory _accounts) external {
+        _modelId;
+        _accounts;
+        delegateAndReturn();
     }
 
-    function doAirdropBySignature(uint256 _modelId, address _account, bytes memory _signature) external {
-        require(_modelId < modelCount(), "Invalid model ID");
-        require(_isValidSignature(_modelId, _account, _signature), "Invalid signature");
-
-        Model storage model = models[_modelId];
-        require(model.supply < model.capacity, "Exceeds capacity");
-        model.supply ++;
-
-        uint tokenId = ++ _currentTokenId;
-        _safeMint(_account, tokenId);
-        modelIds[tokenId] = _modelId;
-        airdropNonces[_account] ++;
-        emit Airdrop(_modelId, _account, tokenId);
-    }
-
-    function _isValidSignature(uint256 _modelId, address _account, bytes memory _signature) internal view returns (bool) {
-        bytes32 message = keccak256(abi.encodePacked(address(this), _modelId, _account, airdropNonces[_account]));
-        bytes32 messageHash = ECDSAUpgradeable.toEthSignedMessageHash(message);
-
-        // check that the signature is from admin signer.
-        address recoveredAddress = ECDSAUpgradeable.recover(messageHash, _signature);
-        return (recoveredAddress == _admin) ? true : false;
+    function doAirdropBySignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) external {
+        _modelId;
+        _account;
+        _quantity;
+        _signature;
+        delegateAndReturn();
     }
 
     /**
@@ -381,5 +289,26 @@ contract MultiModelNftUpgradeable is OwnableUpgradeable, OpenseaERC721Upgradeabl
         emit ColorChange(tokenId, _colors[tokenId]);
     }
 
-    uint256[38] private __gap;
+    /**
+     * @dev Delegate to sub contract
+     */
+    function setSubImpl(address _subImpl) external onlyOwner() {
+        require(_subImpl != address(0), "_subImpl is invaild");
+
+        subImpl = _subImpl;
+        emit NewSubImpl(subImpl);
+    }
+
+    function delegateAndReturn() private returns (bytes memory) {
+        (bool success, ) = subImpl.delegatecall(msg.data);
+
+        assembly {
+            let free_mem_ptr := mload(0x40)
+            returndatacopy(free_mem_ptr, 0, returndatasize())
+
+            switch success
+            case 0 { revert(free_mem_ptr, returndatasize()) }
+            default { return(free_mem_ptr, returndatasize()) }
+        }
+    }
 }

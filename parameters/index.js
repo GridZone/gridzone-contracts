@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { BigNumber, utils } = ethers;
 const parseEther = utils.parseEther;
 
-const GAS_PRICE_GWEI = 60;
+// const GAS_PRICE_GWEI = 60;
 
 module.exports = {
   gasPrice: (typeof GAS_PRICE_GWEI !== 'undefined') ? BigNumber.from(10).pow(9).mul(GAS_PRICE_GWEI) : undefined,
@@ -26,6 +26,10 @@ module.exports = {
       zoneReserveInLP: 3888,
       ethReserveInLP: 1,
     },
+    LPStaking: {
+      zonePerMinute: parseEther('4.2'),
+      minDepositAmountInEth: parseEther('0.1'),
+    },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",  // TODO: Update with correct address
     },
@@ -44,14 +48,39 @@ module.exports = {
       contractAddress: "0x06454E306DBCB79C7C139d5e8977ac455f812f52",
     },
     PriceOracle: {
-      contractAddress: "0x9A1f400FA839C48B29C335A06fC324670D0e7d86",
+      contractAddress: "0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6",
       lpZoneEth: "0xbeBA86D9718276c545cA45A25BF10A370DBA3A86", // Uniswap V2 ZONE/ETH
       usePoolPrice: true,
       zoneReserveInLP: 3888,
       ethReserveInLP: 1,
     },
+    LPStaking: {
+      zonePerMinute: parseEther('4.2'),
+      minDepositAmountInEth: parseEther('0.1'),
+    },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+    },
+  },
+
+  rinkeby: {
+    Global: {
+      ownerAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+      proxyAdmin: "0x09647ac37619cdc3fD384cAf3428615b650108ca",
+    },
+    ZONE: {
+      tokenAddress: "0x862E80fFDDB68230CFc9850e767260A9595C93Eb",
+      vaultAddress: "0x6CdeD499E788eC7be89E4A4aC183065B1f38Cb16",
+    },
+    NymLib: {
+      contractAddress: "0x053477e68bDaBbCcEDcDB316F64a029089b85221",
+    },
+    PriceOracle: {
+      contractAddress: "0xc1389875f0125F691886D911d48F390dC4E1bFcD",
+      lpZoneEth: "0x0000000000000000000000000000000000000000", // Uniswap V2 ZONE/ETH
+      usePoolPrice: false,
+      zoneReserveInLP: 3888,
+      ethReserveInLP: 1,
     },
   },
 

@@ -9,14 +9,19 @@ module.exports = async ({ deployments }) => {
   const nymLibUpgradeableProxy = await deployments.get("NymLibUpgradeableProxy");
   const priceOracleUpgradeableProxy = await deployments.get("PriceOracleUpgradeableProxy");
 
-  console.log("Now deploying MultiModelNftUpgradeable on Goerli...");
+  console.log("Now deploying MultiModelNftUpgradeable ...");
   const impl = await deploy("MultiModelNftUpgradeable", {
     from: deployer.address,
     gasPrice,
   });
   console.log("  MultiModelNftUpgradeable contract address: ", impl.address);
 
-  console.log("Now deploying RideNftUpgradeableProxy on Goerli...");
+  const subImpl = await deploy("MultiModelNftUpgradeableSub", {
+    from: deployer.address,
+    gasPrice,
+  });
+  console.log("  MultiModelNftUpgradeableSub contract address: ", subImpl.address);
+
   const implArtifact = await deployments.getArtifact("MultiModelNftUpgradeable");
   const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   const data = iface.encodeFunctionData("initialize", [
@@ -26,7 +31,8 @@ module.exports = async ({ deployments }) => {
     "GridZone Rides",
     "GZR",
     true,
-    true
+    true,
+    subImpl.address
   ]);
   const proxyContract = await deploy("RideNftUpgradeableProxy", {
     from: deployer.address,
@@ -59,6 +65,13 @@ module.exports = async ({ deployments }) => {
     await run("verify:verify", {
       address: impl.address,
       contract: "contracts/NFT/base/MultiModelNftUpgradeable.sol:MultiModelNftUpgradeable",
+    });
+  } catch(e) {
+  }
+  try {
+    await run("verify:verify", {
+      address: subImpl.address,
+      contract: "contracts/NFT/base/MultiModelNftUpgradeableSub.sol:MultiModelNftUpgradeableSub",
     });
   } catch(e) {
   }

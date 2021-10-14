@@ -84,8 +84,8 @@ abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
         }
     }
 
-    function safeAcceptOwnership() external {
-        require(msg.sender == _pendingOwner, "acceptOwnership: Call must come from pendingOwner.");
+    function safeAcceptOwnership() public virtual {
+        require(_msgSender() == _pendingOwner, "acceptOwnership: Call must come from pendingOwner.");
         emit OwnershipTransferred(_owner, _pendingOwner);
         _owner = _pendingOwner;
     }
