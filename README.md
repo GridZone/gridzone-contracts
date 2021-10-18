@@ -145,10 +145,10 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | VoteBox                  | [0xe2c6aF4Aa0a3923C245a51a0188515f3b36B841A](https://etherscan.io/address/0xe2c6aF4Aa0a3923C245a51a0188515f3b36B841A) | [0x57E21D288E7ccBfb332295e4f8Ca738512e6E075](https://goerli.etherscan.io/address/0x57E21D288E7ccBfb332295e4f8Ca738512e6E075) |
 | ProxyAdmin               | [0x341B280dE890a46E96961f04d438214c76F1E2d6](https://etherscan.io/address/0x341B280dE890a46E96961f04d438214c76F1E2d6) | [0x7bC3487097F6495D3d0d2944Df80B161612293a9](https://goerli.etherscan.io/address/0x7bC3487097F6495D3d0d2944Df80B161612293a9) |
 | PublicSale               | [0xf963b0Df7d18F11e05e12371407a1f6a4091206F](https://etherscan.io/address/0xf963b0Df7d18F11e05e12371407a1f6a4091206F) | [0x44fE947e4cb4D5c07c9Ed1a4724B3e6B7A946C91](https://goerli.etherscan.io/address/0x44fE947e4cb4D5c07c9Ed1a4724B3e6B7A946C91) |
-| NymLib                   |  | [0x06454E306DBCB79C7C139d5e8977ac455f812f52](https://goerli.etherscan.io/address/0x06454E306DBCB79C7C139d5e8977ac455f812f52) |
-| PriceOracle              |  | [0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6](https://goerli.etherscan.io/address/0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6) |
-| GridZone Rides (GZR)     |  | [0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986](https://goerli.etherscan.io/address/0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986) |
-| LP Staking               |  | [0xd35A00A07e79B72457245Fc665c4D78609744414](https://goerli.etherscan.io/address/0xd35A00A07e79B72457245Fc665c4D78609744414) |
+| NymLib                   | [0x5e4233192C27A26ac10f84F4e748f56a8187a230](https://etherscan.io/address/0x5e4233192C27A26ac10f84F4e748f56a8187a230) | [0x06454E306DBCB79C7C139d5e8977ac455f812f52](https://goerli.etherscan.io/address/0x06454E306DBCB79C7C139d5e8977ac455f812f52) |
+| PriceOracle              | [0x5B2B0d0f50b03451633604E7524f2d4adc61CC09](https://etherscan.io/address/0x5B2B0d0f50b03451633604E7524f2d4adc61CC09) | [0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6](https://goerli.etherscan.io/address/0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6) |
+| GridZone Rides (GZR)     | [0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30](https://etherscan.io/address/0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30) | [0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986](https://goerli.etherscan.io/address/0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986) |
+| LP Staking               | [0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28](https://etherscan.io/address/0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28) | [0xd35A00A07e79B72457245Fc665c4D78609744414](https://goerli.etherscan.io/address/0xd35A00A07e79B72457245Fc665c4D78609744414) |
 | NYM                      |  |  |
 | GenesisSaleRewardAirdrop |  |  |
 | GridZoneStakingBot       |  |  |

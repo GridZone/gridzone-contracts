@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { BigNumber, utils } = ethers;
 const parseEther = utils.parseEther;
 
-// const GAS_PRICE_GWEI = 60;
+const GAS_PRICE_GWEI = 80;
 
 module.exports = {
   gasPrice: (typeof GAS_PRICE_GWEI !== 'undefined') ? BigNumber.from(10).pow(9).mul(GAS_PRICE_GWEI) : undefined,
@@ -17,17 +17,17 @@ module.exports = {
       vaultAddress: "0x7205731e9643235Aa313D46552c7aa81E559fB6F",
     },
     NymLib: {
-      contractAddress: "",
+      contractAddress: "0x5e4233192C27A26ac10f84F4e748f56a8187a230",
     },
     PriceOracle: {
-      contractAddress: "",
+      contractAddress: "0x5B2B0d0f50b03451633604E7524f2d4adc61CC09",
       lpZoneEth: "0x95332661B2e36a02dC05E6fb7c31193f0690C90F", // Uniswap V2 ZONE/ETH
       usePoolPrice: true,
       zoneReserveInLP: 3888,
       ethReserveInLP: 1,
     },
     LPStaking: {
-      zonePerMinute: parseEther('4.2'),
+      zonePerMinute: parseEther('4.2035'),
       minDepositAmountInEth: parseEther('0.1'),
     },
     GenesisSaleRewardAirdrop: {
@@ -55,7 +55,7 @@ module.exports = {
       ethReserveInLP: 1,
     },
     LPStaking: {
-      zonePerMinute: parseEther('4.2'),
+      zonePerMinute: parseEther('4.2035'),
       minDepositAmountInEth: parseEther('0.1'),
     },
     GenesisSaleRewardAirdrop: {
