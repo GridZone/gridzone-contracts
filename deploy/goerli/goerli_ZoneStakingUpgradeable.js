@@ -1,26 +1,28 @@
 const { ethers } = require("hardhat");
-const { mainnet: network_ } = require("../../parameters");
+const { goerli: network_ } = require("../../parameters");
 
 module.exports = async ({ deployments }) => {
   const { deploy } = deployments;
   const [deployer] = await ethers.getSigners();
 
-  console.log("Now deploying GridZoneStakingUpgradeable...");
-  const impl = await deploy("GridZoneStakingUpgradeable", {
+  console.log("Now deploying ZoneStakingUpgradeable...");
+  const impl = await deploy("ZoneStakingUpgradeable", {
     from: deployer.address,
   });
-  console.log("  GridZoneStakingUpgradeable address: ", impl.address);
+  console.log("  ZoneStakingUpgradeable address: ", impl.address);
 
-  const implArtifact = await deployments.getArtifact("GridZoneStakingUpgradeable");
+  const implArtifact = await deployments.getArtifact("ZoneStakingUpgradeable");
   const iface = new ethers.utils.Interface(JSON.stringify(implArtifact.abi));
   const data = iface.encodeFunctionData("initialize", [
     network_.Global.ownerAddress,
     network_.ZONE.tokenAddress,
-    network_.ZONE.tokenAddress,
-    network_.ZONE.vaultAddress,
+    network_.ZONE.governorTimelock,
+    network_.ZoneStaking.enables,
+    network_.ZoneStaking.lockDays,
+    network_.ZoneStaking.rewardRates,
   ]);
 
-  const proxy = await deploy("GridZoneStakingUpgradeableProxy", {
+  const proxy = await deploy("ZoneStakingUpgradeableProxy", {
     from: deployer.address,
     args: [
       impl.address,
@@ -28,13 +30,13 @@ module.exports = async ({ deployments }) => {
       data,
     ],
   });
-  console.log("  GridZoneStakingUpgradeableProxy address: ", proxy.address);
+  console.log("  ZoneStakingUpgradeableProxy address: ", proxy.address);
 
   console.log("  Verifing contracts");
   try {
     await run("verify:verify", {
       address: impl.address,
-      contract: "contracts/Staking/GridZoneStakingUpgradeable.sol:GridZoneStakingUpgradeable",
+      contract: "contracts/Staking/ZoneStakingUpgradeable.sol:ZoneStakingUpgradeable",
     });
   } catch(e) {
   }
@@ -46,9 +48,9 @@ module.exports = async ({ deployments }) => {
         network_.Global.proxyAdmin,
         data,
       ],
-      contract: "contracts/Staking/GridZoneStakingUpgradeable.sol:GridZoneStakingUpgradeableProxy",
+      contract: "contracts/Staking/ZoneStakingUpgradeable.sol:ZoneStakingUpgradeableProxy",
     });
   } catch (e) {
   }
 };
-module.exports.tags = ["mainnet_GridZoneStakingUpgradeable"];
+module.exports.tags = ["goerli_ZoneStakingUpgradeable"];

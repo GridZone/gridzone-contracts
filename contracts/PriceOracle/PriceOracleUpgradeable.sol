@@ -32,7 +32,6 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     // ETH reserve in ZONE/ETH
     uint256 public ethReserveInLP;
 
-    uint256 public constant PERIOD = 24 hours;
     uint32  public blockTimestampLast;
 
     uint256 public price0CumulativeLast;
@@ -40,7 +39,12 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     FixedPoint.uq112x112 public price0AverageLast;
     FixedPoint.uq112x112 public price1AverageLast;
 
+    uint256 public PERIOD;
+
+    address public wethAddress;
+
     // Events
+    event SetPeriod (uint256 indexed newPeriod);
     event ActivatePoolPrice (bool newUsePoolPrice, uint256 newZoneReserveInLP, uint256 newEthReserveInLP);
     event NewZoneEthLP (address indexed newZoneEthLP);
 
@@ -64,10 +68,20 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
         require(_ownerAddress != address(0), "Owner address is invalid");
         require(_zoneTokenAddress != address(0), "ZONE token address is invalid");
 
+        PERIOD = 24 hours;
+
         __Ownable_init(_ownerAddress);
         zoneToken = _zoneTokenAddress;
         _setZoneEthLP(_lpZoneEth);
         _activatePoolPrice(_usePoolPrice, _zoneReserveAmount, _ethReserveAmount);
+    }
+
+    /**
+     * @dev Set the period for updating.
+     */
+    function setPeriod(uint256 _period) onlyOwner external {
+        PERIOD = _period;
+        emit SetPeriod(PERIOD);
     }
 
     /**
@@ -102,6 +116,7 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     function _setZoneEthLP(address _lpZoneEth) internal {
         lpZoneEth = IUniswapV2Pair(_lpZoneEth);
         if (address(lpZoneEth) != address(0)) {
+            wethAddress = (lpZoneEth.token0() == zoneToken) ? lpZoneEth.token1() : lpZoneEth.token0();
             _updateFirst();
         }
     }
@@ -142,10 +157,6 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
      * @return The price
      */
     function getOutAmount(address token, uint256 tokenAmount) public view returns (uint256) {
-        if (address(lpZoneEth) == address(0)) {
-            return 0;
-        }
-
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = 
             UniswapV2OracleLibrary.currentCumulativePrices(address(lpZoneEth));
 
@@ -171,19 +182,9 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
     /**
      * @dev Take the price in ZONE for minting a token, and return it.
      */
-    function mintPriceInZone(uint256 _mintPriceInEth) external returns (uint256) {
-        if (_mintPriceInEth == 0) return 0;
-
+    function mintPriceInZone(uint256 _mintPriceInEth) external view returns (uint256) {
         if (usePoolPrice && address(lpZoneEth) != address(0)) {
-            uint32 blockTimestamp = UniswapV2OracleLibrary.currentBlockTimestamp();
-            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
-            if (PERIOD <= timeElapsed) {
-                // It's needed to update the average price
-                update();
-            }
-            return (zoneToken == lpZoneEth.token1())
-                ? price0AverageLast.mul(_mintPriceInEth).decode144()
-                : price1AverageLast.mul(_mintPriceInEth).decode144();
+            return getOutAmount(wethAddress, _mintPriceInEth);
         } else {
             if (zoneReserveInLP == 0 || ethReserveInLP == 0) return 0;
             return _mintPriceInEth.mul(zoneReserveInLP).div(ethReserveInLP);
@@ -209,5 +210,5 @@ contract PriceOracleUpgradeable is OwnableUpgradeable {
         return sqrtR.mul(sqrtP).mul(2).div(totalSupply);
     }
 
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 }

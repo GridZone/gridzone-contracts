@@ -1,22 +1,5 @@
 # GridZone Contracts
 
-We detail a few of the core contracts.
-
-<dl>
-  <dt>Staking BOT</dt>
-  <dd>The staking contract of GridZone token. Holders will be rewarded against to amount and days which they staked.</dd>
-</dl>
-
-<dl>
-  <dt>NYM NFT</dt>
-  <dd>The contract of NYM token. When a new user is registered, it will be minted for the user.</dd>
-</dl>
-
-<dl>
-  <dt>GenesisSaleRewardAirdrop</dt>
-  <dd>The airdrop contract for the rewards against the purchases in Genesis sales.</dd>
-</dl>
-
 ## Installation
 Pull the repository from GitHub and install its dependencies. You will need [npm](https://docs.npmjs.com/cli/install) installed.
 
@@ -73,18 +56,17 @@ npx hardhat deploy --network mainnet --tags mainnet_PriceOracleUpgradeable
 npx hardhat deploy --network mainnet --tags mainnet_RideNft
 ```
 
+### Staking
+
+```text
+npx hardhat deploy --network mainnet --tags mainnet_ZoneStakingUpgradeable
+```
+
 ### NYM
 
 ```text
 npx hardhat deploy --network mainnet --tags mainnet_NYM_deploy
 npx hardhat deploy --network mainnet --tags mainnet_NYM_verify
-```
-
-### Staking
-
-```text
-npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_deploy
-npx hardhat deploy --network mainnet --tags mainnet_GridZoneStakingBot_verify
 ```
 
 ### GenesisSaleRewardAirdrop
@@ -149,9 +131,9 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | PriceOracle              | [0x5B2B0d0f50b03451633604E7524f2d4adc61CC09](https://etherscan.io/address/0x5B2B0d0f50b03451633604E7524f2d4adc61CC09) | [0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6](https://goerli.etherscan.io/address/0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6) |
 | GridZone Rides (GZR)     | [0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30](https://etherscan.io/address/0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30) | [0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986](https://goerli.etherscan.io/address/0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986) |
 | LP Staking               | [0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28](https://etherscan.io/address/0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28) | [0xd35A00A07e79B72457245Fc665c4D78609744414](https://goerli.etherscan.io/address/0xd35A00A07e79B72457245Fc665c4D78609744414) |
+| Zone Staking             |  | [0xceA9c9b7Baf80C0c4eAD2139393ddD51d45e7690](https://goerli.etherscan.io/address/0xcea9c9b7baf80c0c4ead2139393ddd51d45e7690) |
 | NYM                      |  |  |
 | GenesisSaleRewardAirdrop |  |  |
-| GridZoneStakingBot       |  |  |
 
 
 | Contracts on Polygon     | Mainnet Address                                                                                                          | Mumbai  Address                                                                                                          |

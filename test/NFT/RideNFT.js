@@ -73,6 +73,25 @@ describe('MultiModelNftUpgradeable', () => {
       }
       expect(await contract.zoneToken()).to.equal(zoneToken.address);
     });
+
+    it('check ownership methds', async () => {
+      const DEFAULT_ADMIN_ROLE = await contract.DEFAULT_ADMIN_ROLE();
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).equal(true);
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, a2.address)).equal(false);
+
+      await expectRevert(contract.safeTransferOwnership(a2.address, true), "Ownable: caller is not the owner");
+      await contract.connect(owner).safeTransferOwnership(a2.address, true);
+      await expectRevert(contract.safeAcceptOwnership(), "acceptOwnership: Call must come from pendingOwner.");
+      await contract.connect(a2).safeAcceptOwnership();
+
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).equal(false);
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, a2.address)).equal(true);
+
+      await contract.connect(a2).safeTransferOwnership(owner.address, false);
+
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).equal(true);
+      expect(await contract.hasRole(DEFAULT_ADMIN_ROLE, a2.address)).equal(false);
+    });
   });
 
   describe('PriceOracle', () => {
@@ -101,10 +120,10 @@ describe('MultiModelNftUpgradeable', () => {
       expect(model[MODEL_METAFILE_URI]).to.equal(uri0);
     });
 
-    it('setModelMintPrice method', async () => {
+    it('setModelMintPrices method', async () => {
       const price = parseEther("0.3");
-      await expectRevert(contract.setModelMintPrice(0, price), "Ownable: caller is not the owner");
-      await contract.connect(owner).setModelMintPrice(0, price);
+      await expectRevert(contract.setModelMintPrices([0], [price]), "Ownable: caller is not the owner");
+      await contract.connect(owner).setModelMintPrices([0], [price]);
       const model = await contract.models(0);
       expect(model[MODEL_MINT_PRICE]).to.equal(price);
     });

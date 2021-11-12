@@ -62,7 +62,7 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
     event NewOpenseaProxyRegistry (address indexed proxyRegistryAddress);
     event NewUris (string[] newUris);
     event NewMintPrice (uint256 indexed newMintPrice);
-    event Mint (address indexed account, uint256 mintFee, uint256 indexed tokenId, string newName, bytes4[] newColor);
+    event Mint (address indexed account, uint256 mintFee, uint256 indexed tokenId);
     event Airdrop (address indexed account, uint256 indexed tokenId);
     event NameChange (uint256 indexed tokenId, string newName);
     event ColorChange (uint256 indexed tokenId, bytes4[] newColor);
@@ -179,7 +179,7 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
     /**
      * @dev Returns the price in ZONE for minting a token.
      */
-    function mintPriceInZone() public returns (uint256) {
+    function mintPriceInZone() public view returns (uint256) {
         return priceOracle.mintPriceInZone(_mintPrice);
     }
 
@@ -187,15 +187,21 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
      * @dev Mints a token
      */
     function mint() external {
-        bytes4[] memory emptyColor;
-        _mintToken("", emptyColor);
+        _mintToken();
     }
 
     function mintWithParams(string memory newName, bytes4[] memory newColor) external {
-        _mintToken(newName, newColor);
+        _mintToken();
+
+        if (0 < bytes(newName).length) {
+            _changeName(_currentTokenId, newName);
+        }
+        if (0 < newColor.length) {
+            _changeColor(_currentTokenId, newColor);
+        }
     }
 
-    function _mintToken(string memory newName, bytes4[] memory newColor) internal {
+    function _mintToken() internal {
         require(totalSupply() < capacity, "Exceeds capacity");
 
         address sender = _msgSender();
@@ -205,15 +211,8 @@ contract BaseNftUpgradeable is IBaseNftUpgradeable, OwnableUpgradeable, OpenseaE
         }
 
         uint tokenId = ++ _currentTokenId;
-        if (0 < bytes(newName).length) {
-            _changeName(tokenId, newName);
-        }
-        if (0 < newColor.length) {
-            _changeColor(tokenId, newColor);
-        }
-
         _safeMint(sender, tokenId);
-        emit Mint(sender, mintFee, tokenId, newName, newColor);
+        emit Mint(sender, mintFee, tokenId);
     }
 
     /**

@@ -10,5 +10,5 @@ module.exports = async () => {
 module.exports.tags = ["hardhat_mainnet_zoneStaking"];
 module.exports.dependencies = [
   "hardhat_reset",
-  "mainnet_GridZoneStakingUpgradeable",
+  "mainnet_ZoneStakingUpgradeable",
 ];

@@ -2,6 +2,7 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
+import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
@@ -18,28 +19,14 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
 
-    // Events
-    event Mint (uint256 indexed modelId, address indexed account, uint256 mintFee, uint256 indexed tokenId, string newName, bytes4[] newColor);
-    event NameChange (uint256 indexed tokenId, string newName);
-    event ColorChange (uint256 indexed tokenId, bytes4[] newColor);
-    event NewSubImpl (address indexed newSubImpl);
-
-    function safeTransferOwnership(address newOwner, bool safely) public override onlyOwner {
-        address _oldOwner = owner();
-        super.safeTransferOwnership(newOwner, safely);
-        if (!safely) {
-            _setupRole(DEFAULT_ADMIN_ROLE, newOwner);
-            revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
-        }
+    function safeTransferOwnership(address newOwner, bool safely) public override {
+        newOwner;
+        safely;
+        delegateAndReturn();
     }
 
     function safeAcceptOwnership() public override {
-        address _oldOwner = owner();
-        address _pendingOwner = pendingOwner();
-        super.safeAcceptOwnership();
-
-        _setupRole(DEFAULT_ADMIN_ROLE, _pendingOwner);
-        revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
+        delegateAndReturn();
     }
 
     /**
@@ -124,9 +111,9 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
         delegateAndReturn();
     }
 
-    function setModelMintPrice(uint256 _modelId, uint256 _mintPrice) external {
-        _modelId;
-        _mintPrice;
+    function setModelMintPrices(uint256[] memory _modelIds, uint256[] memory _mintPrices) external {
+        _modelIds;
+        _mintPrices;
         delegateAndReturn();
     }
 
@@ -157,7 +144,7 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
     /**
      * @dev Returns the price in ZONE for minting a token.
      */
-    function mintPriceInZone(uint256 _modelId) public returns (uint256) {
+    function mintPriceInZone(uint256 _modelId) public view returns (uint256) {
         return priceOracle.mintPriceInZone(models[_modelId].mintPrice);
     }
 
@@ -165,15 +152,21 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
      * @dev Mints a token
      */
     function mint(uint256 _modelId) external {
-        bytes4[] memory emptyColor;
-        _mintToken(_modelId, "", emptyColor);
+        _mintToken(_modelId);
     }
 
     function mintWithParams(uint256 _modelId, string memory _newName, bytes4[] memory _newColor) external {
-        _mintToken(_modelId, _newName, _newColor);
+        _mintToken(_modelId);
+
+        if (0 < bytes(_newName).length) {
+            _changeName(_currentTokenId, _newName);
+        }
+        if (0 < _newColor.length) {
+            _changeColor(_currentTokenId, _newColor);
+        }
     }
 
-    function _mintToken(uint256 _modelId, string memory _newName, bytes4[] memory _newColor) internal {
+    function _mintToken(uint256 _modelId) internal {
         require(_modelId < modelCount(), "Invalid model ID");
         Model storage model = models[_modelId];
         require(model.supply < model.capacity, "Exceeds capacity");
@@ -186,16 +179,9 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
         }
 
         uint tokenId = ++ _currentTokenId;
-        if (0 < bytes(_newName).length) {
-            _changeName(tokenId, _newName);
-        }
-        if (0 < _newColor.length) {
-            _changeColor(tokenId, _newColor);
-        }
-
         modelIds[tokenId] = _modelId;
         _safeMint(sender, tokenId);
-        emit Mint(_modelId, sender, mintFee, tokenId, _newName, _newColor);
+        emit Mint(_modelId, sender, mintFee, tokenId);
     }
 
     /**
@@ -208,12 +194,32 @@ contract MultiModelNftUpgradeable is MultiModelNftUpgradeableBase {
         delegateAndReturn();
     }
 
-    function doAirdropBySignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) external {
-        _modelId;
-        _account;
-        _quantity;
-        _signature;
-        delegateAndReturn();
+    function doAirdropBySignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) external returns(uint256 leftCapacity) {
+        require(_modelId < modelCount(), "MultiModelNft: Invalid model ID");
+        require(_isValidSignature(_modelId, _account, _quantity, _signature), "MultiModelNft: Invalid signature");
+
+        Model storage model = models[_modelId];
+        require((model.airdropSupply + _quantity) <= model.airdropCapacity, "MultiModelNft: Exceeds capacity");
+        model.airdropSupply += _quantity;
+
+        for (uint i = 0; i < _quantity; i ++) {
+            uint256 tokenId = ++ _currentTokenId;
+            uint256 airdropNonce = airdropNonces[_account];
+            modelIds[tokenId] = _modelId;
+            airdropNonces[_account] ++;
+            _safeMint(_account, tokenId);
+            emit Airdrop(_modelId, _account, airdropNonce, tokenId);
+        }
+        leftCapacity = model.airdropCapacity.sub(model.airdropSupply);
+    }
+
+    function _isValidSignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) internal view returns (bool) {
+        bytes32 message = keccak256(abi.encodePacked(address(this), _modelId, _account, _quantity, airdropNonces[_account]));
+        bytes32 messageHash = ECDSAUpgradeable.toEthSignedMessageHash(message);
+
+        // check that the signature is from admin signer.
+        address recoveredAddress = ECDSAUpgradeable.recover(messageHash, _signature);
+        return hasRole(ALLOWED_MINTERS, recoveredAddress);
     }
 
     /**

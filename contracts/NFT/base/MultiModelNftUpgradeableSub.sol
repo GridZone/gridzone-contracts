@@ -2,7 +2,6 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
@@ -15,13 +14,23 @@ contract MultiModelNftUpgradeableSub is MultiModelNftUpgradeableBase {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
 
-    // Events
-    event AddModel (uint8 class, string name, string metafileUri, uint256 capacity, uint256 mintPrice, bytes4[] defaultColor, uint8 bonus);
-    event ModelNewUri (uint256 indexed modelId, string newUri);
-    event ModelNewMintPrice (uint256 indexed modelId, uint256 newMintPrice);
-    event ModelNewCapacity (uint256 indexed modelId, uint256 newCapacity);
-    event ModelNewAirdropCapacity (uint256 indexed modelId, uint256 newCapacity);
-    event Airdrop (uint256 indexed modelId, address indexed account, uint256 airdropNonce, uint256 indexed tokenId);
+    function safeTransferOwnership(address newOwner, bool safely) public override onlyOwner() {
+        address _oldOwner = owner();
+        super.safeTransferOwnership(newOwner, safely);
+        if (!safely) {
+            _setupRole(DEFAULT_ADMIN_ROLE, newOwner);
+            revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
+        }
+    }
+
+    function safeAcceptOwnership() public override {
+        address _oldOwner = owner();
+        address _pendingOwner = pendingOwner();
+        super.safeAcceptOwnership();
+
+        _setupRole(DEFAULT_ADMIN_ROLE, _pendingOwner);
+        revokeRole(DEFAULT_ADMIN_ROLE, _oldOwner);
+    }
 
     /**
      * @notice Add a new model.
@@ -76,10 +85,17 @@ contract MultiModelNftUpgradeableSub is MultiModelNftUpgradeableBase {
         emit ModelNewUri(_modelId, models[_modelId].metafileUri);
     }
 
-    function setModelMintPrice(uint256 _modelId, uint256 _mintPrice) external onlyOwner() {
-        require(_modelId < modelCount(), "Invalid model ID");
-        models[_modelId].mintPrice = _mintPrice;
-        emit ModelNewMintPrice(_modelId, models[_modelId].mintPrice);
+    function setModelMintPrices(uint256[] memory _modelIds, uint256[] memory _mintPrices) external onlyOwner() {
+        require(_modelIds.length == _mintPrices.length, "Mismatched data");
+
+        for (uint256 i = 0; i < _modelIds.length; i ++) {
+            uint256 _modelId = _modelIds[i];
+            uint256 _mintPrice = _mintPrices[i];
+            require(_modelId < modelCount(), "Invalid model ID");
+
+            models[_modelId].mintPrice = _mintPrice;
+            emit ModelNewMintPrice(_modelId, models[_modelId].mintPrice);
+        }
     }
 
     function setModelCapacities(uint256[] memory _modelIds, uint256[] memory _capacities) external onlyOwner() {
@@ -132,33 +148,5 @@ contract MultiModelNftUpgradeableSub is MultiModelNftUpgradeableBase {
             emit Airdrop(_modelId, account, type(uint256).max, tokenId);
         }
         leftCapacity = model.airdropCapacity.sub(model.airdropSupply);
-    }
-
-    function doAirdropBySignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) external returns(uint256 leftCapacity) {
-        require(_modelId < modelCount(), "MultiModelNft: Invalid model ID");
-        require(_isValidSignature(_modelId, _account, _quantity, _signature), "MultiModelNft: Invalid signature");
-
-        Model storage model = models[_modelId];
-        require((model.airdropSupply + _quantity) <= model.airdropCapacity, "MultiModelNft: Exceeds capacity");
-        model.airdropSupply += _quantity;
-
-        for (uint i = 0; i < _quantity; i ++) {
-            uint256 tokenId = ++ _currentTokenId;
-            uint256 airdropNonce = airdropNonces[_account];
-            modelIds[tokenId] = _modelId;
-            airdropNonces[_account] ++;
-            _safeMint(_account, tokenId);
-            emit Airdrop(_modelId, _account, airdropNonce, tokenId);
-        }
-        leftCapacity = model.airdropCapacity.sub(model.airdropSupply);
-    }
-
-    function _isValidSignature(uint256 _modelId, address _account, uint256 _quantity, bytes memory _signature) internal view returns (bool) {
-        bytes32 message = keccak256(abi.encodePacked(address(this), _modelId, _account, _quantity, airdropNonces[_account]));
-        bytes32 messageHash = ECDSAUpgradeable.toEthSignedMessageHash(message);
-
-        // check that the signature is from admin signer.
-        address recoveredAddress = ECDSAUpgradeable.recover(messageHash, _signature);
-        return hasRole(ALLOWED_MINTERS, recoveredAddress);
     }
 }

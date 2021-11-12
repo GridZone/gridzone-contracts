@@ -10,7 +10,7 @@ interface IPriceOracleUpgradeable {
 
     function getOutAmount(address token, uint256 tokenAmount) external view returns (uint256);
 
-    function mintPriceInZone(uint256 _mintPrice) external returns (uint256);
+    function mintPriceInZone(uint256 _mintPrice) external view returns (uint256);
 
     function getLPFairPrice() external view returns (uint256);
 }

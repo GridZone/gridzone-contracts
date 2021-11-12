@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { BigNumber, utils } = ethers;
 const parseEther = utils.parseEther;
 
-const GAS_PRICE_GWEI = 80;
+// const GAS_PRICE_GWEI = 80;
 
 module.exports = {
   gasPrice: (typeof GAS_PRICE_GWEI !== 'undefined') ? BigNumber.from(10).pow(9).mul(GAS_PRICE_GWEI) : undefined,
@@ -14,6 +14,7 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0xC1D9B5A0776d7C8B98b8A838e5a0DD1Bc5Fdd53C",
+      governorTimelock: "0x0e11aA601F7e114Ea64eA3fd4Eb838A3bfDFb8B9",
       vaultAddress: "0x7205731e9643235Aa313D46552c7aa81E559fB6F",
     },
     NymLib: {
@@ -30,6 +31,11 @@ module.exports = {
       zonePerMinute: parseEther('4.2035'),
       minDepositAmountInEth: parseEther('0.1'),
     },
+    ZoneStaking: {
+      enables: [false, true, true, true],
+      lockDays: [30, 60, 90, 180],
+      rewardRates: [0, 500, 800, 2000], // 0%, 5%, 8%, 20%
+    },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",  // TODO: Update with correct address
     },
@@ -42,6 +48,7 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0x862E80fFDDB68230CFc9850e767260A9595C93Eb",
+      governorTimelock: "0x464141184F1E36D984888534C32817CBaE74955B",
       vaultAddress: "0x6CdeD499E788eC7be89E4A4aC183065B1f38Cb16",
     },
     NymLib: {
@@ -57,6 +64,11 @@ module.exports = {
     LPStaking: {
       zonePerMinute: parseEther('4.2035'),
       minDepositAmountInEth: parseEther('0.1'),
+    },
+    ZoneStaking: {
+      enables: [false, true, true, true],
+      lockDays: [30, 60, 90, 180],
+      rewardRates: [0, 500, 800, 2000], // 0%, 5%, 8%, 20%
     },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",

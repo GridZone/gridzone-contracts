@@ -68,6 +68,18 @@ contract MultiModelNftUpgradeableBase is OwnableUpgradeable, OpenseaERC721Upgrad
 
     bytes32 public constant ALLOWED_MINTERS = keccak256("ALLOWED_MINTERS");
 
+    // Events
+    event Mint (uint256 indexed modelId, address indexed account, uint256 mintFee, uint256 indexed tokenId);
+    event Airdrop (uint256 indexed modelId, address indexed account, uint256 airdropNonce, uint256 indexed tokenId);
+    event NameChange (uint256 indexed tokenId, string newName);
+    event ColorChange (uint256 indexed tokenId, bytes4[] newColor);
+    event NewSubImpl (address indexed newSubImpl);
+    event AddModel (uint8 class, string name, string metafileUri, uint256 capacity, uint256 mintPrice, bytes4[] defaultColor, uint8 bonus);
+    event ModelNewUri (uint256 indexed modelId, string newUri);
+    event ModelNewMintPrice (uint256 indexed modelId, uint256 newMintPrice);
+    event ModelNewCapacity (uint256 indexed modelId, uint256 newCapacity);
+    event ModelNewAirdropCapacity (uint256 indexed modelId, uint256 newCapacity);
+
     function _msgSender() internal override view returns (address payable) {
         return EIP712MetaTxUpgradeable.msgSender();
     }
