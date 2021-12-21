@@ -1,94 +1,71 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/introspection/IERC165.sol";
-import "@openzeppelin/contracts/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/EnumerableMap.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Metadata.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts-upgradeable/introspection/ERC165Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721MetadataUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "../lib/access/Ownable.sol";
-import "./INymLib.sol";
+import "../lib/access/OwnableUpgradeable.sol";
+import "../lib/util/MathUtil.sol";
 
 /**
  * @title NYM
  * @dev Extends ERC721 Non-Fungible Token Standard basic implementation
  */
-contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enumerable {
-    using SafeERC20 for IERC20;
-    using SafeMath for uint256;
-    using Address for address;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using EnumerableMap for EnumerableMap.UintToAddressMap;
-    using Strings for uint256;
+contract NymUpgradeable is OwnableUpgradeable, ERC165Upgradeable, IERC721Upgradeable, IERC721MetadataUpgradeable {
+    using AddressUpgradeable for address;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeMathUpgradeable for uint256;
+    using StringsUpgradeable for uint256;
 
-    uint256 private _currentTokenId = 0;
+    uint256 private _currentTokenId;
 
     // Capacity of token
-    uint256 private _cap = 1000;
+    uint256 private _cap;
+
+    uint256 public totalSupply;
 
     // Price to mint a token
-    uint256 private _mintPrice = 1e17; // 0.1 ETH
-
-    // Token address to be rewarded
-    IERC20 public rewardToken;
-
-    // Price to reward
-    uint256 public rewardAmount = 462 * (10 ** 18);
+    uint256 public mintPrice;
 
     // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
     // Mapping from holder address to their (enumerable) set of owned tokens
-    mapping (address => EnumerableSet.UintSet) private _holderTokens;
+    mapping (address => EnumerableSetUpgradeable.UintSet) private _holderTokens;
 
-    // Enumerable mapping from token ids to their owners
-    EnumerableMap.UintToAddressMap private _tokenOwners;
+    // Mapping from token ID to owner address
+    mapping (uint256 => address) private _tokenOwners;
 
     // Mapping from token ID to approved address
     mapping (uint256 => address) private _tokenApprovals;
-
-    // Mapping from token ID to name
-    mapping (uint256 => string) private _tokenName;
-
-    // Mapping if certain name string has already been reserved
-    mapping (string => bool) private _nameReserved;
 
     // Mapping from owner to operator approvals
     mapping (address => mapping (address => bool)) private _operatorApprovals;
 
     // Token name
-    string private _name = "GridZone.Nym";
+    string private _name;
 
     // Token symbol
-    string private _symbol = "NYM";
+    string private _symbol;
 
     // Optional mapping for token URIs
     mapping (uint256 => string) private _tokenURIs;
 
     // Base URI
     string private _baseURI;
-
-    // Vault address
-    address public vault;
-
-    // Optional mapping for ipfs hashes
-    mapping (uint256 => bytes32) public ipfsHashesInHexadecimal;
-
-    INymLib public nymLib;
-
-    bytes2 internal constant IPFS_PREFIX = 0x1220; // Multihash function: SHA2-256 Hashing algorithm
 
     /*
      *     bytes4(keccak256('balanceOf(address)')) == 0x70a08231
@@ -115,39 +92,54 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      */
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
-    /*
-     *     bytes4(keccak256('totalSupply()')) == 0x18160ddd
-     *     bytes4(keccak256('tokenOfOwnerByIndex(address,uint256)')) == 0x2f745c59
-     *     bytes4(keccak256('tokenByIndex(uint256)')) == 0x4f6ccce7
-     *
-     *     => 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
+    uint256[] private _freeTokenIds;
+
+    bool public locked;
 
     // Events
-    event NewNym (uint256 indexed tokenId, string newName);
-    event NameChange (uint256 indexed tokenId, string newName);
+    event NewNym (address indexed to, uint256 indexed tokenId, uint256 mintPrice);
     event NewCapacity (uint256 indexed newCapacity);
     event NewMintPrice (uint256 indexed newMintPrice);
-    event NewRewardToken (address indexed newRewardToken);
-    event NewRewardAmount (uint256 indexed newRewardAmount);
+    event NewLocked (bool indexed newLocked);
 
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    constructor (address nymLib_, address rewardToken_, address vault_) Ownable(msg.sender) public {
-        require(nymLib_ != address(0), "NYM: NYM library address is zero");
-        require(rewardToken_ != address(0), "NYM: reward token address is zero");
-        require(vault_ != address(0), "NYM: vault address is zero");
+    function initialize(
+        address ownerAddress_,
+        string memory baseURI_
+    ) public initializer {
+        require(ownerAddress_ != address(0), "Invalid owner");
 
-        nymLib = INymLib(nymLib_);
-        rewardToken = IERC20(rewardToken_);
-        vault = vault_;
+        _name = "NEONPUNK";
+        _symbol = "NEON";
+        _cap = 300;
+        mintPrice = 15e16; // 0.15 ETH
+        locked = true;
 
-        // register the supported interfaces to conform to ERC721 via ERC165
+        __Ownable_init(ownerAddress_);
+        __ERC165_init();
+
+        // register the supported interfaces to conform to ERC721 via ERC165Upgradeable
         _registerInterface(_INTERFACE_ID_ERC721);
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
-        _registerInterface(_INTERFACE_ID_ERC721_ENUMERABLE);
+
+        _baseURI = baseURI_;
+
+        _mintInternal(0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c);
+        _mintInternal(0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c);
+        _mintInternal(0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c);
+        _mintInternal(0x9A72088c3D45Da0b874CF42eDF285B0600B36FCc);
+        _mintInternal(0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c);
+        _mintInternal(0x9A72088c3D45Da0b874CF42eDF285B0600B36FCc);
+        _mintInternal(0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c);
+        _mintInternal(0x32a51d0Ad4Ff0876E94858970688FE80B80EAD6e);
+        _mintInternal(0x6BD58Fccf92631d168A4635814eF6a1d8B9aaba7);
+        _mintInternal(0xda59E40c7BD1d961D4c54c0AD55Ac13C4927b73a);
+
+        for (uint id = _currentTokenId+1; id <= _cap; id ++) {
+            _freeTokenIds.push(id);
+        }
     }
 
     /**
@@ -161,42 +153,26 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * @dev Set the cap.
      */
     function setCapacity(uint256 cap) onlyOwner external {
-        require(totalSupply() <= cap, "NYM: capacity is less than the current supply");
+        require(totalSupply <= cap, "capacity is less than the current supply");
 
         _cap = cap;
         emit NewCapacity(_cap);
     }
 
     /**
-     * @dev Returns the price of minting a token.
-     */
-    function mintPrice() external view returns (uint256) {
-        return _mintPrice;
-    }
-
-    /**
      * @dev Set the minting price.
      */
     function setMintPrice(uint256 price) onlyOwner external {
-        _mintPrice = price;
-        emit NewMintPrice(_mintPrice);
+        mintPrice = price;
+        emit NewMintPrice(mintPrice);
     }
 
     /**
-     * @dev Set the address of the reward token.
+     * @dev Set the 'locked' flag.
      */
-    function setRewardToken(address tokenAddress) onlyOwner external {
-        require(tokenAddress != address(0), "NYM: token address is zero");
-        rewardToken = IERC20(tokenAddress);
-        emit NewRewardToken(tokenAddress);
-    }
-
-    /**
-     * @dev Set the amound to be rewarded.
-     */
-    function setRewardAmount(uint256 amount) onlyOwner external {
-        rewardAmount = amount;
-        emit NewRewardAmount(rewardAmount);
+    function setLocked(bool _locked) onlyOwner external {
+        locked = _locked;
+        emit NewLocked(locked);
     }
 
     /**
@@ -204,15 +180,15 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      */
     function balanceOf(address tokenOwner) public view override returns (uint256) {
         require(tokenOwner != address(0), "ERC721: balance query for the zero address");
-
         return _holderTokens[tokenOwner].length();
     }
 
     /**
      * @dev See {IERC721-ownerOf}.
      */
-    function ownerOf(uint256 tokenId) public view override returns (address) {
-        return _tokenOwners.get(tokenId, "ERC721: owner query for nonexistent token");
+    function ownerOf(uint256 tokenId) public view override returns (address owner_) {
+        owner_ = _tokenOwners[tokenId];
+        require(owner_ != address(0) , "ERC721: owner query for nonexistent token");
     }
 
     /**
@@ -262,92 +238,37 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     /**
      * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
      */
-    function tokenOfOwnerByIndex(address tokenOwner, uint256 index) public view override returns (uint256) {
+    function tokenOfOwnerByIndex(address tokenOwner, uint256 index) public view returns (uint256) {
         return _holderTokens[tokenOwner].at(index);
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-totalSupply}.
-     */
-    function totalSupply() public view override returns (uint256) {
-        // _tokenOwners are indexed by tokenIds, so .length() returns the number of tokenIds
-        return _tokenOwners.length();
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-tokenByIndex}.
-     */
-    function tokenByIndex(uint256 index) public view override returns (uint256) {
-        (uint256 tokenId, ) = _tokenOwners.at(index);
-        return tokenId;
-    }
-
-    /**
-     * @dev Returns name of the NFT at tokenId.
-     */
-    function tokenNameById(uint256 tokenId) public view returns (string memory) {
-        return _tokenName[tokenId];
-    }
-
-    /**
-     * @dev Returns if the name has been reserved.
-     */
-    function isNameReserved(string memory nameString) public view returns (bool) {
-        return _nameReserved[nymLib.toLower(nameString)];
     }
 
     /**
     * @dev Mints a NYM
     */
-    function mint() external payable {
-        _createNym("");
-    }
+    function mint(uint256 qty) external payable {
+        require(0 < qty, "Quantity is zero");
+        require(totalSupply.add(qty) <= _cap, "Exceeds capacity");
+        require(mintPrice.mul(qty) == msg.value, "Ether value sent is not correct");
 
-    function mintWithName(string memory newName) external payable {
-        _createNym(newName);
-    }
-
-    function _createNym(string memory newName) internal {
         address sender = _msgSender();
-
-        require(totalSupply() < _cap, "Exceeds capacity");
-        require(balanceOf(sender) == 0, "NYM NFT: It is not allowed to own multiple NYM tokens");
-        require(_mintPrice == msg.value, "Ether value sent is not correct");
-
-        uint tokenId = ++ _currentTokenId;
-        _safeMint(sender, tokenId);
-
-        if (0 < bytes(newName).length) {
-            require(nymLib.validateName(newName) == true, "Not a valid name");    
-            require(isNameReserved(newName) == false, "Name already reserved");
-
-            toggleReserveName(newName, true);
-            _tokenName[tokenId] = newName;
+        for (uint i = 0; i < qty; i ++) {
+            _mintInternal(sender);
         }
-
-        if (0 < rewardAmount) {
-            rewardToken.safeTransfer(sender, rewardAmount);
-        }
-        emit NewNym(tokenId, newName);
     }
 
-    /**
-     * @dev Changes the name for tokenId
-     */
-    function changeName(uint256 tokenId, string memory newName) public {
-        address tokenOwner = ownerOf(tokenId);
-
-        require(_msgSender() == tokenOwner, "ERC721: caller is not the token owner");
-        require(nymLib.validateName(newName) == true, "Not a valid new name");
-        require(sha256(bytes(newName)) != sha256(bytes(_tokenName[tokenId])), "New name is same as the current one");
-        require(isNameReserved(newName) == false, "Name already reserved");
-
-        if (bytes(_tokenName[tokenId]).length > 0) {
-            toggleReserveName(_tokenName[tokenId], false);
+    function _mintInternal(address to) internal {
+        uint256 tokenId;
+        uint256 count = _freeTokenIds.length;
+        if (0 < count) {
+            uint index = MathUtil.random() % count;
+            tokenId = _freeTokenIds[index];
+            _freeTokenIds[index] = _freeTokenIds[count-1];
+            _freeTokenIds.pop();
+        } else {
+            tokenId = ++ _currentTokenId;
         }
-        toggleReserveName(newName, true);
-        _tokenName[tokenId] = newName;
-        emit NameChange(tokenId, _tokenName[tokenId]);
+        _safeMint(to, tokenId, "");
+        emit NewNym(to, tokenId, mintPrice);
     }
 
     /**
@@ -355,17 +276,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     */
     function withdraw() onlyOwner external {
         uint balance = address(this).balance;
-        TransferHelper.safeTransferETH(vault, balance);
-    }
-
-    /**
-     * @dev Withdraw tokens from this contract (Callable by owner)
-    */
-    function withdrawRewardToken() onlyOwner external {
-        uint256 tokenBalance = rewardToken.balanceOf(address(this));
-        if (0 < tokenBalance) {
-            rewardToken.safeTransfer(vault, tokenBalance);
-        }
+        TransferHelper.safeTransferETH(owner(), balance);
     }
 
     /**
@@ -453,7 +364,6 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * Emits a {Transfer} event.
      */
     function _safeTransfer(address from, address to, uint256 tokenId, bytes memory _data) internal virtual {
-        require(balanceOf(to) == 0, "NYM NFT: It is not allowed to own multiple NYM tokens");
         _transfer(from, to, tokenId);
         require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
     }
@@ -467,7 +377,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      * and stop existing when they are burned (`_burn`).
      */
     function _exists(uint256 tokenId) internal view returns (bool) {
-        return _tokenOwners.contains(tokenId);
+        return (_tokenOwners[tokenId] != address(0));
     }
 
     /**
@@ -526,7 +436,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
 
         _holderTokens[to].add(tokenId);
 
-        _tokenOwners.set(tokenId, to);
+        _tokenOwners[tokenId] = to;
+        totalSupply ++;
 
         emit Transfer(address(0), to, tokenId);
     }
@@ -556,7 +467,8 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
 
         _holderTokens[tokenOwner].remove(tokenId);
 
-        _tokenOwners.remove(tokenId);
+        _tokenOwners[tokenId] = address(0);
+        totalSupply --;
 
         emit Transfer(tokenOwner, address(0), tokenId);
     }
@@ -575,6 +487,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
     function _transfer(address from, address to, uint256 tokenId) internal virtual {
         require(ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
         require(to != address(0), "ERC721: transfer to the zero address");
+        require(!locked, "No transfer allowed yet");
 
         _beforeTokenTransfer(from, to, tokenId);
 
@@ -584,7 +497,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
         _holderTokens[from].remove(tokenId);
         _holderTokens[to].add(tokenId);
 
-        _tokenOwners.set(tokenId, to);
+        _tokenOwners[tokenId] = to;
 
         emit Transfer(from, to, tokenId);
     }
@@ -627,7 +540,7 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
             return true;
         }
         bytes memory returndata = to.functionCall(abi.encodeWithSelector(
-            IERC721Receiver(to).onERC721Received.selector,
+            IERC721ReceiverUpgradeable(to).onERC721Received.selector,
             _msgSender(),
             from,
             tokenId,
@@ -659,44 +572,14 @@ contract NYM is Context, Ownable, ERC165, IERC721, IERC721Metadata, IERC721Enume
      */
     function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual { }
 
-    /**
-     * @dev Reserves the name if isReserve is set to true, de-reserves if set to false
-     */
-    function toggleReserveName(string memory str, bool isReserve) internal {
-        _nameReserved[nymLib.toLower(str)] = isReserve;
+    function freeCount() public view returns(uint256) {
+        return _freeTokenIds.length;
+    }
+}
+
+contract NymUpgradeableProxy is TransparentUpgradeableProxy {
+
+    constructor(address logic, address admin, bytes memory data) TransparentUpgradeableProxy(logic, admin, data) public {
     }
 
-    /**
-     * @dev Store the IPFS hash of the user icon in 32 bytes hex
-     */
-    function storeIPFSHashHex(uint256 tokenId, bytes32 ipfsHashHex) external {
-        address tokenOwner = ownerOf(tokenId);
-        require(_msgSender() == tokenOwner, "NYM: caller is not the token owner");
-
-        ipfsHashesInHexadecimal[tokenId] = ipfsHashHex;
-    }
-
-    /**
-     * @dev Returns the IPFS Hash in Hexadecimal format for the user icon at specified position in the original hashed sequence
-     */
-    function _getIPFSHashHex(uint256 tokenId) internal view returns (bytes memory)
-    {
-        bytes32 ipfsHashHex = ipfsHashesInHexadecimal[tokenId];
-        if (ipfsHashHex == "") {
-            return bytes("");
-        }
-        return abi.encodePacked(IPFS_PREFIX, ipfsHashHex);
-    }
-
-    /**
-     * @dev Returns the IPFS Hash in Base58
-     */
-    function getIPFSHash(uint256 tokenId) external view returns (string memory ipfsHash)
-    {
-        bytes memory ipfsHashFullHex = _getIPFSHashHex(tokenId);
-        if (ipfsHashFullHex.length == 0) {
-            return "";
-        }
-        ipfsHash = nymLib.toBase58(ipfsHashFullHex);
-    }
 }

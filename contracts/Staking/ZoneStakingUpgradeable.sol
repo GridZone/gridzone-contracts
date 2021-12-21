@@ -44,6 +44,8 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     address public governorTimelock;
 
+    uint256 public totalUnstakedAmountWithReward;
+
     event AddType(bool enable, uint16 lockDay, uint256 rewardRate);
     event ChangeType(uint8 typeIndex, bool enable, uint16 lockDay, uint256 rewardRate);
     event SetStakeLimit(uint256 newStakeLimit);
@@ -80,6 +82,7 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         stakeLimit = 2500000e18; // 2.5M ZONE
         minStakeAmount = 1e18; // 1 ZONE
+        earlyUnstakeAllowed = true;
 
         __Ownable_init(_ownerAddress);
         __ReentrancyGuard_init();
@@ -154,8 +157,9 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         emit ChangeType (_typeIndex, _type.enabled, _type.lockDay, _type.rewardRate);
     }
 
-    function isOpen() public view returns (bool) {
-        return (totalStakedAmount < stakeLimit) ? true : false;
+    function leftCapacity() public view returns(uint256) {
+        uint256 spent = totalUnstakedAmountWithReward.add(totalStakedAmount).sub(totalUnstakedAmount);
+        return stakeLimit.sub(spent);
     }
 
     function isStaked(address account) public view returns (bool) {
@@ -163,7 +167,8 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     }
 
     function setStakeLimit(uint256 _stakeLimit) external onlyOwnerOrCommunity() {
-        require(totalStakedAmount <= _stakeLimit, "The limit is too small");
+        uint256 spent = totalUnstakedAmountWithReward.add(totalStakedAmount).sub(totalUnstakedAmount);
+        require(spent <= _stakeLimit, "The limit is too small");
         stakeLimit = _stakeLimit;
         emit SetStakeLimit(stakeLimit);
     }
@@ -180,10 +185,11 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     function startStake(uint256 amount, uint8 typeIndex) external nonReentrant() {
         address staker = _msgSender();
-        require(isOpen(), "Already closed");
+        uint256 capacity = leftCapacity();
+        require(0 < capacity, "Already closed");
         require(isStaked(staker) == false, "Already staked");
         require(minStakeAmount <= amount, "The staking amount is too small");
-        require(totalStakedAmount.add(amount) <= stakeLimit, "Exceed the staking limit");
+        require(amount <= capacity, "Exceed the staking limit");
         require(typeIndex < types.length, "Invalid typeIndex");
         require(types[typeIndex].enabled, "The type disabled");
 
@@ -215,11 +221,14 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         stakes[staker].rewardAmount = (claimIn == 0) ? reward : 0;
 
         totalUnstakedAmount = totalUnstakedAmount.add(stakedAmount);
+        if (0 < stakes[staker].rewardAmount) {
+            totalUnstakedAmountWithReward = totalUnstakedAmountWithReward.add(stakedAmount);
+        }
         types[typeIndex].stakedAmount = types[typeIndex].stakedAmount.sub(stakedAmount);
 
         zoneToken.safeTransfer(staker, stakedAmount.add(stakes[staker].rewardAmount));
 
-        emit Unstaked(staker, stakedAmount, reward);
+        emit Unstaked(staker, stakedAmount, stakes[staker].rewardAmount);
     }
 
     function _calcReward(
@@ -247,7 +256,7 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             (claimIn, rewardAmount) = _calcReward(stake.stakedTs, stake.stakedAmount, stake.typeIndex);
             return (stakedAmount, typeIndex, claimIn, rewardAmount, 0);
         }
-        return (0, 0, 0, 0, stakeLimit.sub(totalStakedAmount));
+        return (0, 0, 0, 0, leftCapacity());
     }
 
     function fund(address _from, uint256 _amount) external {
@@ -270,7 +279,7 @@ contract ZoneStakingUpgradeable is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         }
     }
 
-    uint256[41] private __gap;
+    uint256[40] private __gap;
 }
 
 contract ZoneStakingUpgradeableProxy is TransparentUpgradeableProxy {

@@ -3,7 +3,8 @@ const { ethers } = require("hardhat");
 const whiteList = require("./airdropWhitelist.js");
 
 async function main() {
-    const signerWallet = new ethers.Wallet.fromMnemonic(process.env.SIGNER_SEED);
+    // const signerWallet = new ethers.Wallet.fromMnemonic(process.env.SIGNER_SEED);
+    const signerWallet = new ethers.Wallet(process.env.PRIVATE_KEY);
     
     console.log(`Signer address: ${signerWallet.address}`);
     console.log('');

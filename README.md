@@ -65,15 +65,7 @@ npx hardhat deploy --network mainnet --tags mainnet_ZoneStakingUpgradeable
 ### NYM
 
 ```text
-npx hardhat deploy --network mainnet --tags mainnet_NYM_deploy
-npx hardhat deploy --network mainnet --tags mainnet_NYM_verify
-```
-
-### GenesisSaleRewardAirdrop
-
-```text
-npx hardhat deploy --network mainnet --tags mainnet_GenesisSaleRewardAirdrop_deploy
-npx hardhat deploy --network mainnet --tags mainnet_GenesisSaleRewardAirdrop_verify
+npx hardhat deploy --network mainnet --tags mainnet_NymUpgradeable
 ```
 
 ## Deploy and Verify contracts on Polygon Mainnet
@@ -131,9 +123,8 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | PriceOracle              | [0x5B2B0d0f50b03451633604E7524f2d4adc61CC09](https://etherscan.io/address/0x5B2B0d0f50b03451633604E7524f2d4adc61CC09) | [0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6](https://goerli.etherscan.io/address/0xDcF7C8664c2191589C5170bF73c6faC5c7cC7bd6) |
 | GridZone Rides (GZR)     | [0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30](https://etherscan.io/address/0x6C7489265fBCC42c9ab11f4Cf4987c7f175bcf30) | [0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986](https://goerli.etherscan.io/address/0x606eBC0dd72238E8ca5B1F50BA78a3Cc1f3A8986) |
 | LP Staking               | [0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28](https://etherscan.io/address/0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28) | [0xd35A00A07e79B72457245Fc665c4D78609744414](https://goerli.etherscan.io/address/0xd35A00A07e79B72457245Fc665c4D78609744414) |
-| Zone Staking             |  | [0xceA9c9b7Baf80C0c4eAD2139393ddD51d45e7690](https://goerli.etherscan.io/address/0xcea9c9b7baf80c0c4ead2139393ddd51d45e7690) |
-| NYM                      |  |  |
-| GenesisSaleRewardAirdrop |  |  |
+| Zone Staking             | [0xc5EAFb53765991459743ae84d879BcA469b49dD2](https://etherscan.io/address/0xc5EAFb53765991459743ae84d879BcA469b49dD2) | [0xceA9c9b7Baf80C0c4eAD2139393ddD51d45e7690](https://goerli.etherscan.io/address/0xcea9c9b7baf80c0c4ead2139393ddd51d45e7690) |
+| NYM                      | [0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12](https://etherscan.io/address/0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12) | [0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8](https://goerli.etherscan.io/address/0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8) |
 
 
 | Contracts on Polygon     | Mainnet Address                                                                                                          | Mumbai  Address                                                                                                          |

@@ -14,7 +14,7 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0xC1D9B5A0776d7C8B98b8A838e5a0DD1Bc5Fdd53C",
-      governorTimelock: "0x0e11aA601F7e114Ea64eA3fd4Eb838A3bfDFb8B9",
+      governorTimelock: "0xBa168554Bc2F231516b6Cf3808A1DD8a3A351C01",
       vaultAddress: "0x7205731e9643235Aa313D46552c7aa81E559fB6F",
     },
     NymLib: {
@@ -35,6 +35,9 @@ module.exports = {
       enables: [false, true, true, true],
       lockDays: [30, 60, 90, 180],
       rewardRates: [0, 500, 800, 2000], // 0%, 5%, 8%, 20%
+    },
+    NYM: {
+      baseURI: "ipfs://QmXQtSG5VoWfi9dM5fcpJ4dqGG4ECoiDRDTS7pr5nHJsJE/",
     },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",  // TODO: Update with correct address
@@ -69,6 +72,9 @@ module.exports = {
       enables: [false, true, true, true],
       lockDays: [30, 60, 90, 180],
       rewardRates: [0, 500, 800, 2000], // 0%, 5%, 8%, 20%
+    },
+    NYM: {
+      baseURI: "ipfs://QmXQtSG5VoWfi9dM5fcpJ4dqGG4ECoiDRDTS7pr5nHJsJE/",
     },
     GenesisSaleRewardAirdrop: {
       adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",

@@ -1,7 +1,7 @@
 "use strict";
 
 const { ethers } = require("hardhat")
-const BigNumber = require('bignumber.js');
+const { BigNumber } = ethers;
 
 function UInt256Max() {
   return ethers.constants.MaxUint256;
@@ -21,26 +21,26 @@ function encodeParameters(types, values) {
 }
 
 async function etherBalance(addr) {
-  return new BigNumber((await ethers.provider.getBalance(addr)).toString());
+  return (await ethers.provider.getBalance(addr));
 }
 
 async function etherGasCost(receipt) {
   const tx = await web3.eth.getTransaction(receipt.transactionHash);
-  const gasUsed = new BigNumber(receipt.gasUsed);
-  const gasPrice = new BigNumber(tx.gasPrice);
-  return gasUsed.times(gasPrice);
+  const gasUsed = BigNumber.from(receipt.gasUsed);
+  const gasPrice = BigNumber.from(tx.gasPrice);
+  return gasUsed.mul(gasPrice);
 }
 
 function etherExp(num) { return etherMantissa(num, 1e18) }
 function etherDouble(num) { return etherMantissa(num, 1e36) }
 function etherMantissa(num, scale = 1e18) {
   if (num < 0)
-    return new BigNumber(2).pow(256).plus(num);
-  return new BigNumber(num).times(scale);
+    return BigNumber.from(2).pow(256).add(num);
+  return BigNumber.from(num).mul(scale);
 }
 
 function etherUnsigned(num) {
-  return new BigNumber(num);
+  return BigNumber.from(num);
 }
 
 function mergeInterface(into, from) {

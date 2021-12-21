@@ -61,10 +61,11 @@ describe('ZoneStakingUpgradeable', () => {
       expect(await contract.governorTimelock()).to.equal(network_.ZONE.governorTimelock);
       expect(await contract.totalStakedAmount()).to.equal(0);
       expect(await contract.totalUnstakedAmount()).to.equal(0);
+      expect(await contract.totalUnstakedAmountWithReward()).to.equal(0);
       expect(await contract.stakeLimit()).to.equal(parseEther('2500000'));
       expect(await contract.minStakeAmount()).to.equal(parseEther('1'));
-      expect(await contract.earlyUnstakeAllowed()).to.equal(false);
-      expect(await contract.isOpen()).to.equal(true);
+      expect(await contract.earlyUnstakeAllowed()).to.equal(true);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000'));
 
       const ret = await contract.getAllTypes();
       const enables = ret[0];
@@ -111,9 +112,9 @@ describe('ZoneStakingUpgradeable', () => {
       await contract.connect(owner).setMinStakeAmount(parseEther('2'));
       expect(await contract.minStakeAmount()).to.equal(parseEther('2'));
 
-      await expectRevert(contract.setEarlyUnstakeAllowed(true), "The caller should be owner or governor");
-      await contract.connect(owner).setEarlyUnstakeAllowed(true);
-      expect(await contract.earlyUnstakeAllowed()).to.equal(true);
+      await expectRevert(contract.setEarlyUnstakeAllowed(false), "The caller should be owner or governor");
+      await contract.connect(owner).setEarlyUnstakeAllowed(false);
+      expect(await contract.earlyUnstakeAllowed()).to.equal(false);
 
       await expectRevert(contract.finish(), "Ownable: caller is not the owner");
       await contract.connect(owner).finish();
@@ -147,6 +148,7 @@ describe('ZoneStakingUpgradeable', () => {
       expect(await contract.totalStakedAmount()).to.equal(amount);
       expect(await contract.totalUnstakedAmount()).to.equal(0);
       expect((await contract.types(1))[TYPE_STAKED_AMOUNT]).equal(amount);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000').sub(amount));
       blockTime = parseInt(await blockTimestamp());
 
       stake = await contract.stakes(a1.address);
@@ -187,7 +189,9 @@ describe('ZoneStakingUpgradeable', () => {
       expect(await zoneToken.balanceOf(a1.address)).to.equal(amount.add(reward));
       expect(await contract.totalStakedAmount()).to.equal(amount);
       expect(await contract.totalUnstakedAmount()).to.equal(amount);
+      expect(await contract.totalUnstakedAmountWithReward()).to.equal(amount);
       expect((await contract.types(1))[TYPE_STAKED_AMOUNT]).equal(0);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000').sub(amount));
 
       stake = await contract.stakes(a1.address);
       expect(stake[STAKE_EXIST]).equal(true);
@@ -203,6 +207,10 @@ describe('ZoneStakingUpgradeable', () => {
       expect(info[INFO_CLAIMIN]).to.equal(0);
       expect(info[INFO_REWARD]).to.equal(0);
       expect(info[INFO_CAPACITY]).to.equal(capacity.sub(amount));
+
+      await contract.startStake(amount, 1);
+      expect(await contract.totalUnstakedAmountWithReward()).to.equal(amount);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000').sub(amount).sub(amount));
     });
 
     it('Should be checked if the amount and type is allowed', async () => {
@@ -221,14 +229,18 @@ describe('ZoneStakingUpgradeable', () => {
       await zoneToken.connect(a1).approve(contract.address, UInt256Max());
 
       await contract.startStake(amount, 1);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000').sub(amount));
 
       await increaseTime(59*SECONDS_IN_DAY);
+      await contract.connect(owner).setEarlyUnstakeAllowed(false);
       await expectRevert(contract.endStake(), "Locked still");
       await expectRevert(contract.connect(a2).endStake(), "Not staked");
 
       await contract.connect(owner).setEarlyUnstakeAllowed(true);
       await contract.endStake();
-      expect(await zoneToken.balanceOf(a1.address)).to.equal(parseEther('1000'));
+      expect(await zoneToken.balanceOf(a1.address)).to.equal(amount);
+      expect(await contract.totalUnstakedAmountWithReward()).to.equal(0);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000'));
     });
 
     it('Should be disabled the double staking before the unstaking', async () => {
@@ -266,7 +278,7 @@ describe('ZoneStakingUpgradeable', () => {
       await expectRevert(contract.connect(a2).startStake(parseEther('100001'), 1), "Exceed the staking limit");
       await contract.connect(a2).startStake(parseEther('100000'), 1);
 
-      expect(await contract.isOpen()).to.equal(false);
+      expect(await contract.leftCapacity()).to.equal(0);
       await expectRevert(contract.connect(a2).startStake(parseEther('1'), 1), "Already closed");
     });
 
@@ -309,6 +321,8 @@ describe('ZoneStakingUpgradeable', () => {
       expect(await zoneToken.balanceOf(a1.address)).to.equal(0);
       await contract.endStake();
       expect(await zoneToken.balanceOf(a1.address)).to.equal(amount);
+      expect(await contract.totalUnstakedAmountWithReward()).to.equal(0);
+      expect(await contract.leftCapacity()).to.equal(parseEther('2500000'));
     });
 
     it('The left ZONE should be transferred if finished', async () => {
