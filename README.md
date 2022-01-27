@@ -125,6 +125,7 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | LP Staking               | [0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28](https://etherscan.io/address/0x6031C257Fb1C855Fe59fC68ee5B2Bfa9433cCE28) | [0xd35A00A07e79B72457245Fc665c4D78609744414](https://goerli.etherscan.io/address/0xd35A00A07e79B72457245Fc665c4D78609744414) |
 | Zone Staking             | [0xc5EAFb53765991459743ae84d879BcA469b49dD2](https://etherscan.io/address/0xc5EAFb53765991459743ae84d879BcA469b49dD2) | [0xceA9c9b7Baf80C0c4eAD2139393ddD51d45e7690](https://goerli.etherscan.io/address/0xcea9c9b7baf80c0c4ead2139393ddd51d45e7690) |
 | NYM                      | [0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12](https://etherscan.io/address/0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12) | [0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8](https://goerli.etherscan.io/address/0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8) |
+| GridZone VIP             | [0x0127Ec6bbf0E03a5987C93B17B874CB43c7a03F4](https://etherscan.io/address/0x0127Ec6bbf0E03a5987C93B17B874CB43c7a03F4) | [0xEcDF759a9Ff515410eC132d5c0e328B84fF65C25](https://goerli.etherscan.io/address/0xEcDF759a9Ff515410eC132d5c0e328B84fF65C25) |
 
 
 | Contracts on Polygon     | Mainnet Address                                                                                                          | Mumbai  Address                                                                                                          |
@@ -134,3 +135,4 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | BiconomyMetaTxRelay      | [0x92a456c2a4a068400305dAdFe6b0c6C60A64F0E4](https://polygonscan.com/address/0x92a456c2a4a068400305dAdFe6b0c6C60A64F0E4) | [0x2A7870CA37A02B53B6ca310904da3B9ce5ab8707](https://mumbai.polygonscan.com/address/0x2A7870CA37A02B53B6ca310904da3B9ce5ab8707) |
 | GridZone Fashion (GZF)   | [0x844a77CA0E982eB1A971c9709D778959E906D902](https://polygonscan.com/address/0x844a77CA0E982eB1A971c9709D778959E906D902) | [0x81A140D74900B2f4D2f3c462cE752638d16938fb](https://mumbai.polygonscan.com/address/0x81A140D74900B2f4D2f3c462cE752638d16938fb) |
 | GridZone Mask (GZM)      | [0x11a2C8836012638E0457Ba4dbA352b55A0068894](https://polygonscan.com/address/0x11a2C8836012638E0457Ba4dbA352b55A0068894) |  |
+| GZ Rewards               |  | [0x2eC28E0dC94cea60595DDf1372E3C81d9C3727dC](https://mumbai.polygonscan.com/address/0x2eC28E0dC94cea60595DDf1372E3C81d9C3727dC) |

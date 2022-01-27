@@ -110,7 +110,9 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0x5Ab64dAAAa458d8f2019C0a3F2275FDc27e498D1",
+      vaultAddress: "",
       // tokenAddress: "0x3a3Df212b7AA91Aa0402B9035b098891d276572B",  // TODO: Remove after lpZoneEth updated with correct address
+      // vaultAddress: "0xB34eD85bc0B9DA2fA3C5e5d2f4B24f8EE96CE4E9", // TODO: Update after ZONE token deployed on Polygon Mainnet
     },
     NymLib: {
       contractAddress: "0xEcDE46B0FeD555f7f9E4B685B6722440EEd2D445",
@@ -138,6 +140,7 @@ module.exports = {
     },
     ZONE: {
       tokenAddress: "0x5248c77c11699082A92b9B6617F884bAF63787de",
+      vaultAddress: "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
     },
     NymLib: {
       contractAddress: "0xe4C974bdc8CdFcb7e5e503E833BDf76FB9404B2b",
