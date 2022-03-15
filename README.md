@@ -126,6 +126,8 @@ npx hardhat deploy --network polygonMainnet --tags polygonMainnet_NymFashionNft_
 | Zone Staking             | [0xc5EAFb53765991459743ae84d879BcA469b49dD2](https://etherscan.io/address/0xc5EAFb53765991459743ae84d879BcA469b49dD2) | [0xceA9c9b7Baf80C0c4eAD2139393ddD51d45e7690](https://goerli.etherscan.io/address/0xcea9c9b7baf80c0c4ead2139393ddd51d45e7690) |
 | NYM                      | [0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12](https://etherscan.io/address/0xF0ed050306C5f02eD9B579d7C4569F0cb87b6E12) | [0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8](https://goerli.etherscan.io/address/0x52FC32680f8015b8E9e16a0c82072CEEd7E170B8) |
 | GridZone VIP             | [0x0127Ec6bbf0E03a5987C93B17B874CB43c7a03F4](https://etherscan.io/address/0x0127Ec6bbf0E03a5987C93B17B874CB43c7a03F4) | [0xEcDF759a9Ff515410eC132d5c0e328B84fF65C25](https://goerli.etherscan.io/address/0xEcDF759a9Ff515410eC132d5c0e328B84fF65C25) |
+| GameCreditSale           |  | [0xfB39bAf5104d22d81bd221C130023Ec5593a535f](https://goerli.etherscan.io/address/0xfB39bAf5104d22d81bd221C130023Ec5593a535f) |
+| EthRewards               |  | [0x2F1b2c9598a0eabFcb48AFcb10b62E0BF4e896e5](https://goerli.etherscan.io/address/0x2F1b2c9598a0eabFcb48AFcb10b62E0BF4e896e5) |
 
 
 | Contracts on Polygon     | Mainnet Address                                                                                                          | Mumbai  Address                                                                                                          |

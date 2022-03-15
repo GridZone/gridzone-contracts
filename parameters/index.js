@@ -39,8 +39,8 @@ module.exports = {
     NYM: {
       baseURI: "ipfs://QmXQtSG5VoWfi9dM5fcpJ4dqGG4ECoiDRDTS7pr5nHJsJE/",
     },
-    GenesisSaleRewardAirdrop: {
-      adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",  // TODO: Update with correct address
+    Airdrop: {
+      adminAddress: "0xab0B18523e8fe8CBF947C55632e8aB5Ce936ae8c",  // TODO: Update with correct address
     },
   },
 
@@ -76,8 +76,8 @@ module.exports = {
     NYM: {
       baseURI: "ipfs://QmXQtSG5VoWfi9dM5fcpJ4dqGG4ECoiDRDTS7pr5nHJsJE/",
     },
-    GenesisSaleRewardAirdrop: {
-      adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00", // "0xb88B8041E91adB1F084d1bB20B425c3D640B97E9",
+    Airdrop: {
+      adminAddress: "0x401903c872A0569cdFe21f9BcDfa0f6D0a3D4D00",
     },
   },
 

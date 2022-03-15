@@ -4,11 +4,10 @@ const { mainnet: network_ } = require("../../parameters");
 module.exports = async () => {
 
   await network.provider.request({method: "hardhat_impersonateAccount", params: [network_.Global.ownerAddress]});
-  await network.provider.request({method: "hardhat_impersonateAccount", params: [network_.ZONE.vaultAddress]});
 };
 
-module.exports.tags = ["hardhat_mainnet"];
+module.exports.tags = ["hardhat_mainnet_gameCreditSale"];
 module.exports.dependencies = [
   "hardhat_reset",
-  "mainnet"
+  "mainnet_GameCreditSale",
 ];

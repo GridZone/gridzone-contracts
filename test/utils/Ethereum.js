@@ -119,8 +119,19 @@ async function minerStop() {
   return rpc({ method: 'miner_stop' });
 }
 
-async function sendEth(from, to, amount) {
-  const value = ethers.utils.parseUnits(amount, 'ether').toHexString();
+async function sendEth(from, to, ethStr) {
+  const value = ethers.utils.parseUnits(ethStr, 'ether').toHexString();
+
+  const params = [{
+    from: from,
+    to: to,
+    value: value.replace(/^0x0/, '0x')
+  }];
+  return await rpc({ method: 'eth_sendTransaction', params: params });
+}
+
+async function sendValue(from, to, ethAmount) {
+  const value = ethAmount.toHexString();
 
   const params = [{
     from: from,
@@ -169,6 +180,7 @@ module.exports = {
   minerStart,
   minerStop,
   sendEth,
+  sendValue,
   rpc,
 
   both,
